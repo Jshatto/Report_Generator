@@ -365,10 +365,10 @@ const accountClassification = {
     }
     function getPill(name){
       const n = name.toLowerCase();
-      if(/p&l|profit|income|p l|\\bpl\\b/.test(n)) return '<span class="pill pl">P&L</span>';
+      if(/p&l|profit|income|p l|\bpl\b/.test(n)) return '<span class="pill pl">P&L</span>';
       if(/balance.*sheet/.test(n)) return '<span class="pill bs">Balance Sheet</span>';
-      if(/a\\/r|receivable|\\bar\\b /.test(n)) return '<span class="pill ar">A/R</span>';
-      if(/a\\/p|payable|\\bap\\b /.test(n)) return '<span class="pill ap">A/P</span>';
+      if(/a\\/r|receivable|\bar\b/.test(n)) return '<span class="pill ar">A/R</span>';
+      if(/a\\/p|payable|\bap\b/.test(n)) return '<span class="pill ap">A/P</span>';
       if(/trial.*balance/.test(n)) return '<span class="pill bs">Trial Balance</span>';
       if(/png|jpg|jpeg|pdf$/.test(n)) return '<span class="pill ch">Chart</span>';
       return '<span class="pill pl">Financial</span>';
@@ -378,8 +378,8 @@ const accountClassification = {
       if(/png|jpg|jpeg|pdf$/.test(n)) return 'Dashboard Chart';
       if(/p&l|profit/.test(n)) return 'Profit & Loss';
       if(/balance.*sheet/.test(n)) return 'Balance Sheet';
-      if(/a\\/r|receivable/.test(n)) return 'A/R Aging';
-      if(/a\\/p|payable/.test(n)) return 'A/P Aging';
+      if(/a\\/r|receivable|\bar\b/.test(n)) return 'A/R Aging';
+      if(/a\\/p|payable|\bap\b/.test(n)) return 'A/P Aging';
       if(/trial.*balance/.test(n)) return 'Trial Balance';
       return 'Financial Report';
     }
