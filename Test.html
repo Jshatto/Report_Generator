@@ -278,11 +278,14 @@
     let parsedData = {};
     let logoDataURL = null;
     let chartImages = [];
-    let financialData = {
-      revenue: {}, costOfGoodsSold: {}, operatingExpenses: {}, otherIncome: {}, otherExpenses: {},
-      currentAssets: {}, fixedAssets: {}, otherAssets: {}, currentLiabilities: {}, longTermLiabilities: {}, equity: {},
-      totals: {}, balanceSheet: null, arAging: null, apAging: null, charts: []
-    };
+    function createEmptyFinancialData(){
+      return {
+        revenue: {}, costOfGoodsSold: {}, operatingExpenses: {}, otherIncome: {}, otherExpenses: {},
+        currentAssets: {}, fixedAssets: {}, otherAssets: {}, currentLiabilities: {}, longTermLiabilities: {}, equity: {},
+        totals: {}, balanceSheet: null, arAging: null, apAging: null, charts: chartImages.slice()
+      };
+    }
+    let financialData = createEmptyFinancialData();
 
 const accountClassification = {
   revenue: [/^4\d{3}/i, /revenue/i, /sales/i, /income(?!.*tax)/i, /service.*income/i, /consulting.*income/i, /professional.*fees.*income/i ],
@@ -387,9 +390,22 @@ const accountClassification = {
       uploadedFiles = uploadedFiles.filter(f=>f.name!==name);
       delete parsedData[name];
       chartImages = chartImages.filter(c=>c.name!==name);
-      financialData.charts = financialData.charts.filter(c=>c.name!==name);
+      rebuildFinancialData();
       document.querySelectorAll('.file').forEach(el=>{ if(el.dataset.filename===name) el.remove(); });
       updateGenerateButton();
+      const preview = document.getElementById('reportPreview');
+      if (preview && preview.style.display !== 'none') {
+        const companyName = document.getElementById('companyName').value;
+        const reportPeriod = document.getElementById('reportPeriod').value;
+        generatePreview(companyName, reportPeriod);
+      }
+    }
+    function rebuildFinancialData(){
+      financialData = createEmptyFinancialData();
+      Object.entries(parsedData).forEach(([fileName, fileData])=>{
+        if(fileData) aggregateFinancialEntries(financialData, fileName, fileData);
+      });
+      calculateTotals();
     }
     function updateGenerateButton(){
       const btn = document.getElementById('generateBtn');
@@ -452,22 +468,25 @@ const accountClassification = {
     }
     function processFinancialData(fileName, fileData){
       try{
-        const data = fileData.type === 'excel' ? (Object.values(fileData.sheets)[0]?.data || []) : (fileData.data || []);
-        data.forEach(row => {
-          try {
-            const accountName = getAccountName(row);
-            const amount = getAmount(row);
-            if (accountName && amount !== null && Math.abs(amount) > 0.01) {
-              const category = categorizeAccount(accountName);
-              if (financialData[category]) {
-                financialData[category][accountName] = (financialData[category][accountName] || 0) + amount;
-              }
-            }
-          } catch (rowError) { console.warn('Row error:', rowError); }
-        });
-        processSpecialReports(fileName, fileData);
+        aggregateFinancialEntries(financialData, fileName, fileData);
         calculateTotals();
       }catch(error){ console.error('processFinancialData:', error); }
+    }
+    function aggregateFinancialEntries(target, fileName, fileData){
+      const data = fileData.type === 'excel' ? (Object.values(fileData.sheets)[0]?.data || []) : (fileData.data || []);
+      data.forEach(row => {
+        try {
+          const accountName = getAccountName(row);
+          const amount = getAmount(row);
+          if (accountName && amount !== null && Math.abs(amount) > 0.01) {
+            const category = categorizeAccount(accountName);
+            if (target[category]) {
+              target[category][accountName] = (target[category][accountName] || 0) + amount;
+            }
+          }
+        } catch (rowError) { console.warn('Row error:', rowError); }
+      });
+      processSpecialReports(fileName, fileData, target);
     }
     function getHeaders(fileData){
       return fileData.type === 'excel' ? (Object.values(fileData.sheets)[0]?.headers || []) : (fileData.headers || []);
@@ -486,19 +505,19 @@ const accountClassification = {
       const headers = getHeaders(fileData);
       return headers.some(h => /vendor/i.test(h)) && headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
     }
-    function processSpecialReports(fileName, fileData){
+    function processSpecialReports(fileName, fileData, target = financialData){
       try{
-        if (!financialData.balanceSheet && isBalanceSheetFile(fileName, fileData)) {
+        if (!target.balanceSheet && isBalanceSheetFile(fileName, fileData)) {
           const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
-          financialData.balanceSheet = processBalanceSheetData(sheet);
+          target.balanceSheet = processBalanceSheetData(sheet);
         }
-        if (!financialData.arAging && isARAgingFile(fileName, fileData)) {
+        if (!target.arAging && isARAgingFile(fileName, fileData)) {
           const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
-          financialData.arAging = processAgingData(sheet, 'customer');
+          target.arAging = processAgingData(sheet, 'customer');
         }
-        if (!financialData.apAging && isAPAgingFile(fileName, fileData)) {
+        if (!target.apAging && isAPAgingFile(fileName, fileData)) {
           const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
-          financialData.apAging = processAgingData(sheet, 'vendor');
+          target.apAging = processAgingData(sheet, 'vendor');
         }
       }catch(e){ console.warn('special reports:', e); }
     }
