@@ -368,38 +368,50 @@ const accountClassification = {
     }
     function getPill(name){
       const n = name.toLowerCase();
-      if(/p&l|profit|income|p l|\bpl\b/.test(n)) return '<span class="pill pl">P&L</span>';
-      if(/balance.*sheet/.test(n)) return '<span class="pill bs">Balance Sheet</span>';
-      if(/a\\/r|receivable|\bar\b/.test(n)) return '<span class="pill ar">A/R</span>';
-      if(/a\\/p|payable|\bap\b/.test(n)) return '<span class="pill ap">A/P</span>';
-      if(/trial.*balance/.test(n)) return '<span class="pill bs">Trial Balance</span>';
-      if(/png|jpg|jpeg|pdf$/.test(n)) return '<span class="pill ch">Chart</span>';
-      return '<span class="pill pl">Financial</span>';
+       if (name.includes('p&l') || name.includes('profit') || name.includes('income') || 
+          name.includes('p l') || name.includes('pl')) {
+        return '<span class="file-badge badge-pl">P&L REPORT</span>';
+      }
+      if (name.includes('balance') && name.includes('sheet')) {
+        return '<span class="file-badge badge-bs">BALANCE SHEET</span>';
+      }
+      if (name.includes('a/r') || name.includes('receivable') || name.includes('ar ')) {
+        return '<span class="file-badge badge-ar">A/R AGING</span>';
+      }
+      if (name.includes('a/p') || name.includes('payable') || name.includes('ap ')) {
+        return '<span class="file-badge badge-ap">A/P AGING</span>';
+      }
+      if (name.includes('trial') && name.includes('balance')) {
+        return '<span class="file-badge badge-bs">TRIAL BALANCE</span>';
+      }
+      
+      return '<span class="file-badge badge-pl">FINANCIAL DATA</span>';
     }
+
     function describe(name){
-      const n = name.toLowerCase();
-      if(/png|jpg|jpeg|pdf$/.test(n)) return 'Dashboard Chart';
-      if(/p&l|profit/.test(n)) return 'Profit & Loss';
-      if(/balance.*sheet/.test(n)) return 'Balance Sheet';
-      if(/a\\/r|receivable|\bar\b/.test(n)) return 'A/R Aging';
-      if(/a\\/p|payable|\bap\b/.test(n)) return 'A/P Aging';
-      if(/trial.*balance/.test(n)) return 'Trial Balance';
+   if (isImageFile({name: filename, type: ''}) || isPDFFile({name: filename, type: ''})) return 'Dashboard Chart';
+      if (name.includes('p&l') || name.includes('profit')) return 'Profit & Loss Report';
+      if (name.includes('balance') && name.includes('sheet')) return 'Balance Sheet Report';
+      if (name.includes('a/r') || name.includes('receivable')) return 'Accounts Receivable Aging';
+      if (name.includes('a/p') || name.includes('payable')) return 'Accounts Payable Aging';
+      if (name.includes('trial')) return 'Trial Balance Report';
+      
       return 'Financial Report';
     }
+
     function removeFile(name){
-      uploadedFiles = uploadedFiles.filter(f=>f.name!==name);
+     uploadedFiles = uploadedFiles.filter(f => f.name !== name);
       delete parsedData[name];
-      chartImages = chartImages.filter(c=>c.name!==name);
-      rebuildFinancialData();
-      document.querySelectorAll('.file').forEach(el=>{ if(el.dataset.filename===name) el.remove(); });
-      updateGenerateButton();
-      const preview = document.getElementById('reportPreview');
-      if (preview && preview.style.display !== 'none') {
-        const companyName = document.getElementById('companyName').value;
-        const reportPeriod = document.getElementById('reportPeriod').value;
-        generatePreview(companyName, reportPeriod);
-      }
-    }
+      chartImages = chartImages.filter(c => c.name !== name);
+      financialData.charts = financialData.charts.filter(c => c.name !== name);
+      
+      const fileItems = document.querySelectorAll('.file-item');
+      fileItems.forEach(item => {
+        if (item.dataset.filename === name) {
+          item.remove();
+        }
+      });
+
     function rebuildFinancialData(){
       financialData = createEmptyFinancialData();
       Object.entries(parsedData).forEach(([fileName, fileData])=>{
@@ -410,8 +422,13 @@ const accountClassification = {
     function updateGenerateButton(){
       const btn = document.getElementById('generateBtn');
       btn.disabled = uploadedFiles.length===0;
-      btn.textContent = uploadedFiles.length? \`Generate PDF Report Package (\${uploadedFiles.length} files)\` : 'Generate PDF Report Package';
+      if (uploadedFiles.length === 0) {
+        btn.textContent = 'Generate Enhanced Report Package';
+      } else {
+        btn.textContent = `Generate Enhanced Report Package (${uploadedFiles.length} files)`;
+      }
     }
+
     function processChartFile(file){
       const r = new FileReader();
       r.onload = e => {
@@ -423,164 +440,326 @@ const accountClassification = {
     const chartType = n => /revenue|sales|income/i.test(n)?'revenue': /expense|cost/i.test(n)?'expense': /cash|flow/i.test(n)?'cashflow': /balance|assets|liabilities/i.test(n)?'balance': /profit|p&l|pl/i.test(n)?'profitloss':'general';
     const chartCategory = n => /dashboard/i.test(n)?'Dashboard': /trend/i.test(n)?'Trend Analysis': /comparison/i.test(n)?'Comparison':'Financial Chart';
 
-    // ---------- Parsing ----------
-    function parseFinancialFile(file){
-      try{
-        if(/csv$/i.test(file.name) || (file.type||'').includes('csv')){
-          const r = new FileReader();
-          r.onload = e => { parsedData[file.name] = parseCSV(e.target.result); processFinancialData(file.name, parsedData[file.name]); };
-          r.readAsText(file);
-        }else{
-          const r = new FileReader();
-          r.onload = e => { const wb = XLSX.read(e.target.result, {type:'array'}); parsedData[file.name] = parseWorkbook(wb); processFinancialData(file.name, parsedData[file.name]); };
-          r.readAsArrayBuffer(file);
+   // Enhanced file parsing
+    function parseFinancialFile(file) {
+      try {
+        if (file.name.toLowerCase().includes('csv') || file.type.includes('csv')) {
+          const reader = new FileReader();
+          reader.onload = e => {
+            parsedData[file.name] = parseCSV(e.target.result);
+            processFinancialData(file.name, parsedData[file.name]);
+          };
+          reader.readAsText(file);
+        } else {
+          const reader = new FileReader();
+          reader.onload = e => {
+            const workbook = XLSX.read(e.target.result, { type: 'array' });
+            parsedData[file.name] = parseExcelWorkbook(workbook);
+            processFinancialData(file.name, parsedData[file.name]);
+          };
+          reader.readAsArrayBuffer(file);
         }
-      }catch(err){ console.error('Parse error:', file.name, err); alert(\`Error parsing \${file.name}: \${err.message}\`); }
-    }
-    function parseCSV(text){
-      const lines = text.split(/\\r?\\n/); const headers = (lines[0]||'').split(',').map(h=>h.trim().replace(/"/g,''));
-      const data=[]; for(let i=1;i<lines.length;i++){ if(!lines[i].trim()) continue; const vals = lines[i].split(',').map(v=>v.trim().replace(/"/g,'')); const row={}; headers.forEach((h,idx)=> row[h] = vals[idx]||''); data.push(row); }
-      return {headers, data, type:'csv'};
-    }
-    function parseWorkbook(wb){
-      const out = {sheets:{}, type:'excel'}; wb.SheetNames.forEach(n=>{ const ws = wb.Sheets[n]; const arr = XLSX.utils.sheet_to_json(ws,{header:1, defval:""}); if(!arr.length) return;
-        const headers = arr[0]||[]; const data=[];
-        for(let r=1;r<arr.length;r++){ const rowArr = arr[r]; if(!rowArr.some(v=>v!=="" && v!==null)) continue; const row={}; headers.forEach((h,i)=> row[h||('Column_'+i)] = rowArr[i]||''); data.push(row); }
-        out.sheets[n] = {headers, data};
-      });
-      return out;
+      } catch (err) {
+        console.error('Error parsing', file.name, err);
+        alert(`Error parsing ${file.name}: ${err.message}`);
+      }
     }
 
-    // ---------- Categorize & Totals ----------
-    function categorizeAccount(accountName){
-      if(!accountName) return 'operatingExpenses';
-      const name = String(accountName).trim().toLowerCase(); if(!name) return 'operatingExpenses';
-      for (const [category, patterns] of Object.entries(accountClassification)) {
-        for (const pattern of patterns) { if (pattern.test(name)) return category; }
+    function parseCSV(text) {
+      const lines = text.split(/\r?\n/);
+      const headers = (lines[0] || '').split(',').map(h => h.trim().replace(/"/g, ''));
+      const data = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        const vals = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+        const row = {};
+        headers.forEach((h, idx) => row[h] = vals[idx] || '');
+        data.push(row);
       }
-      if (/^1\\d{3}/.test(name)) return 'currentAssets';
-      if (/^2\\d{3}/.test(name)) return 'currentLiabilities';
-      if (/^3\\d{3}/.test(name)) return 'equity';
-      if (/^4\\d{3}/.test(name)) return 'revenue';
-      if (/^5\\d{3}/.test(name)) return 'operatingExpenses';
-      if (/^6\\d{3}/.test(name)) return 'operatingExpenses';
-      return 'operatingExpenses';
+      
+      return { headers, data, type: 'csv' };
     }
-    function processFinancialData(fileName, fileData){
-      try{
-        aggregateFinancialEntries(financialData, fileName, fileData);
-        calculateTotals();
-      }catch(error){ console.error('processFinancialData:', error); }
-    }
-    function aggregateFinancialEntries(target, fileName, fileData){
-      const data = fileData.type === 'excel' ? (Object.values(fileData.sheets)[0]?.data || []) : (fileData.data || []);
-      data.forEach(row => {
-        try {
-          const accountName = getAccountName(row);
-          const amount = getAmount(row);
-          if (accountName && amount !== null && Math.abs(amount) > 0.01) {
-            const category = categorizeAccount(accountName);
-            if (target[category]) {
-              target[category][accountName] = (target[category][accountName] || 0) + amount;
+
+    function parseExcelWorkbook(workbook) {
+      const result = { sheets: {}, type: 'excel' };
+      
+      workbook.SheetNames.forEach(name => {
+        const ws = workbook.Sheets[name];
+        const arr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        if (!arr.length) return;
+        
+        const headers = arr[0] || [];
+        const data = [];
+        
+        for (let r = 1; r < arr.length; r++) {
+          const rowArr = arr[r];
+          let hasData = false;
+          
+          for (let c = 0; c < rowArr.length; c++) {
+            if (rowArr[c] !== "" && rowArr[c] !== null) {
+              hasData = true;
+              break;
             }
           }
-        } catch (rowError) { console.warn('Row error:', rowError); }
+          
+          if (!hasData) continue;
+          
+          const row = {};
+          headers.forEach((h, i) => row[h || ('Column_' + i)] = rowArr[i] || '');
+          data.push(row);
+        }
+        
+        result.sheets[name] = { headers, data };
       });
-      processSpecialReports(fileName, fileData, target);
+      
+      return result;
     }
-    function getHeaders(fileData){
-      return fileData.type === 'excel' ? (Object.values(fileData.sheets)[0]?.headers || []) : (fileData.headers || []);
+
+
+    // Enhanced account categorization
+    function categorizeAccount(accountName) {
+      if (!accountName) return 'operatingExpenses';
+      
+      const name = String(accountName).trim().toLowerCase();
+      if (!name) return 'operatingExpenses';
+      
+      // Check each category pattern
+      for (const [category, patterns] of Object.entries(accountClassification)) {
+        for (const pattern of patterns) {
+          if (pattern.test(name)) {
+            return category;
+          }
+        }
+      }
+      
+      // Fallback categorization based on account numbers
+      if (/^1\d{3}/.test(name)) return 'currentAssets';
+      if (/^2\d{3}/.test(name)) return 'currentLiabilities';
+      if (/^3\d{3}/.test(name)) return 'equity';
+      if (/^4\d{3}/.test(name)) return 'revenue';
+      if (/^5\d{3}/.test(name)) return 'operatingExpenses';
+      if (/^6\d{3}/.test(name)) return 'operatingExpenses';
+      
+      // Default to operating expenses for unmatched items with amounts
+      return 'operatingExpenses';
     }
-    function isBalanceSheetFile(fileName, fileData){
-      const name = fileName.toLowerCase(); if (name.includes('balance') && name.includes('sheet')) return true;
-      const headers = getHeaders(fileData); return headers.some(h => /assets|liabilities|equity/i.test(String(h)));
+
+    function processFinancialData(fileName, fileData) {
+      try {
+        const data = fileData.type === 'excel'
+          ? (Object.values(fileData.sheets)[0]?.data || [])
+          : (fileData.data || []);
+
+        data.forEach(row => {
+          try {
+            const accountName = getAccountName(row);
+            const amount = getAmount(row);
+            
+            if (accountName && amount !== null && Math.abs(amount) > 0.01) {
+              const category = categorizeAccount(accountName);
+              
+              // Store in appropriate category
+              if (financialData[category]) {
+                financialData[category][accountName] = (financialData[category][accountName] || 0) + amount;
+              }
+            }
+          } catch (rowError) {
+            console.warn('Error processing row:', rowError);
+          }
+        });
+
+        // Process special report types
+        processSpecialReports(fileName, fileData);
+        calculateTotals();
+      } catch (error) {
+        console.error('Error in processFinancialData:', error);
+      }
     }
-    function isARAgingFile(fileName, fileData){
-      const name = fileName.toLowerCase(); if (name.includes('a/r') || name.includes('receivable')) return true;
+
+    function processSpecialReports(fileName, fileData) {
+      try {
+        // Balance Sheet detection and processing
+        if (!financialData.balanceSheet && isBalanceSheetFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.balanceSheet = processBalanceSheetData(sheet);
+        }
+        
+        // A/R Aging detection and processing
+        if (!financialData.arAging && isARAgingFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.arAging = processAgingData(sheet, 'customer');
+        }
+        
+        // A/P Aging detection and processing
+        if (!financialData.apAging && isAPAgingFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.apAging = processAgingData(sheet, 'vendor');
+        }
+      } catch (e) {
+        console.warn('Error processing special reports:', e);
+      }
+    }
+
+    function isBalanceSheetFile(fileName, fileData) {
+      const name = fileName.toLowerCase();
+      if (name.includes('balance') && name.includes('sheet')) return true;
+      
       const headers = getHeaders(fileData);
-      return headers.some(h => /customer/i.test(h)) && headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
+      return headers.some(h => /assets|liabilities|equity/i.test(String(h)));
     }
-    function isAPAgingFile(fileName, fileData){
-      const name = fileName.toLowerCase(); if (name.includes('a/p') || name.includes('payable')) return true;
+
+    function isARAgingFile(fileName, fileData) {
+      const name = fileName.toLowerCase();
+      if (name.includes('a/r') || name.includes('receivable')) return true;
+      
       const headers = getHeaders(fileData);
-      return headers.some(h => /vendor/i.test(h)) && headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
+      return headers.some(h => /customer/i.test(h)) && 
+             headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
     }
-    function processSpecialReports(fileName, fileData, target = financialData){
-      try{
-        if (!target.balanceSheet && isBalanceSheetFile(fileName, fileData)) {
-          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
-          target.balanceSheet = processBalanceSheetData(sheet);
-        }
-        if (!target.arAging && isARAgingFile(fileName, fileData)) {
-          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
-          target.arAging = processAgingData(sheet, 'customer');
-        }
-        if (!target.apAging && isAPAgingFile(fileName, fileData)) {
-          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
-          target.apAging = processAgingData(sheet, 'vendor');
-        }
-      }catch(e){ console.warn('special reports:', e); }
+
+    function isAPAgingFile(fileName, fileData) {
+      const name = fileName.toLowerCase();
+      if (name.includes('a/p') || name.includes('payable')) return true;
+      
+      const headers = getHeaders(fileData);
+      return headers.some(h => /vendor/i.test(h)) && 
+             headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
     }
-    function processBalanceSheetData(sheet){
-      const headers = sheet.headers || []; const rows = sheet.data || [];
+
+    function getHeaders(fileData) {
+      return fileData.type === 'excel'
+        ? (Object.values(fileData.sheets)[0]?.headers || [])
+        : (fileData.headers || []);
+    }
+
+    function processBalanceSheetData(sheet) {
+      const headers = sheet.headers || [];
+      const rows = sheet.data || [];
+      
       const nameIndex = headers.findIndex(h => /name|account|description/i.test(String(h)));
       const amountIndex = headers.findIndex(h => /amount|total|balance|value/i.test(String(h)));
-      const processedRows = rows.slice(0, 200).map(row => [
+      
+      const processedRows = rows.slice(0, 100).map(row => [
         nameIndex >= 0 ? (row[headers[nameIndex]] || '') : '',
         amountIndex >= 0 ? (row[headers[amountIndex]] || '') : ''
       ]).filter(row => row[0] && row[1]);
-      return { columns: ['Account', 'Amount'], rows: processedRows };
+      
+      return {
+        columns: ['Account', 'Amount'],
+        rows: processedRows
+      };
     }
-    function processAgingData(sheet, entityType){
-      const headers = sheet.headers || []; const rows = sheet.data || [];
+
+    function processAgingData(sheet, entityType) {
+      const headers = sheet.headers || [];
+      const rows = sheet.data || [];
+      
       const entityPattern = entityType === 'customer' ? /customer/i : /vendor/i;
-      const relevantHeaders = headers.filter(h => entityPattern.test(String(h)) || /(current|1-30|31-60|61-90|over|total)/i.test(String(h)));
-      const processedRows = rows.slice(0, 200).map(row => relevantHeaders.map(header => row[header] || '')).filter(row => row.some(cell => cell));
-      return { columns: relevantHeaders, rows: processedRows };
+      const relevantHeaders = headers.filter(h => 
+        entityPattern.test(String(h)) || 
+        /(current|1-30|31-60|61-90|over|total)/i.test(String(h))
+      );
+      
+      const processedRows = rows.slice(0, 100).map(row => 
+        relevantHeaders.map(header => row[header] || '')
+      ).filter(row => row.some(cell => cell));
+      
+      return {
+        columns: relevantHeaders,
+        rows: processedRows
+      };
     }
-    function getAccountName(row){
+
+    function getAccountName(row) {
       const candidates = ['Name', 'Account', 'Description', 'Account Name', 'Distribution account'];
-      for (const field of candidates) { if (row[field] && String(row[field]).trim()) return String(row[field]).trim(); }
-      for (const [key, value] of Object.entries(row)) {
-        if (typeof value === 'string' && value.trim() && !value.match(/^\\$?[\\d,\\.\\-()]+$/) && value.length > 2) return value.trim();
+      
+      // Try standard field names first
+      for (const field of candidates) {
+        if (row[field] && String(row[field]).trim()) {
+          return String(row[field]).trim();
+        }
       }
+      
+      // Look for text fields that could be account names
+      for (const [key, value] of Object.entries(row)) {
+        if (typeof value === 'string' && 
+            value.trim() && 
+            !value.match(/^\$?[\d,.\-()]+$/) && 
+            value.length > 2) {
+          return value.trim();
+        }
+      }
+      
       return null;
     }
-    function getAmount(row){
+
+    function getAmount(row) {
       const candidates = ['Amount', 'Total', 'Balance', 'Value', 'Current', 'Current Period'];
-      for (const field of candidates) { if (row[field] !== undefined && row[field] !== '') { const parsed = parseAmount(row[field]); if (parsed !== null) return parsed; } }
-      for (const value of Object.values(row)) { const parsed = parseAmount(value); if (parsed !== null && Math.abs(parsed) > 0.01) return parsed; }
+      
+      // Try standard amount fields first
+      for (const field of candidates) {
+        if (row[field] !== undefined && row[field] !== '') {
+          const parsed = parseAmount(row[field]);
+          if (parsed !== null) return parsed;
+        }
+      }
+      
+      // Look for any numeric fields
+      for (const value of Object.values(row)) {
+        const parsed = parseAmount(value);
+        if (parsed !== null && Math.abs(parsed) > 0.01) {
+          return parsed;
+        }
+      }
+      
       return null;
     }
-    function parseAmount(value){
+
+    function parseAmount(value) {
       if (typeof value === 'number') return value;
       if (typeof value !== 'string') return null;
-      const cleaned = value.replace(/[\\$,\\s]/g, '').trim();
-      const isNegative = /\\((.*)\\)/.test(cleaned);
+      
+      const cleaned = value.replace(/[\$,\s]/g, '').trim();
+      const isNegative = /\((.*)\)/.test(cleaned);
       const numStr = cleaned.replace(/[()]/g, '');
       const num = parseFloat(numStr);
+      
       if (isNaN(num)) return null;
       return isNegative ? -Math.abs(num) : num;
     }
-    function sumCategory(category){ return Object.values(financialData[category] || {}).reduce((s,v)=> s + (v||0), 0); }
-    function calculateTotals(){
+
+    function calculateTotals() {
       const totalRevenue = sumCategory('revenue') + sumCategory('otherIncome');
       const totalCOGS = sumCategory('costOfGoodsSold');
       const totalOpEx = sumCategory('operatingExpenses') + sumCategory('otherExpenses');
       const totalExpenses = totalCOGS + totalOpEx;
+      
       const totalCurrentAssets = sumCategory('currentAssets');
       const totalFixedAssets = sumCategory('fixedAssets');
       const totalAssets = totalCurrentAssets + totalFixedAssets + sumCategory('otherAssets');
+      
       const totalCurrentLiabilities = sumCategory('currentLiabilities');
       const totalLongTermLiabilities = sumCategory('longTermLiabilities');
       const totalLiabilities = totalCurrentLiabilities + totalLongTermLiabilities;
+      
       const totalEquity = sumCategory('equity');
+      
       financialData.totals = {
-        totalRevenue, totalCOGS, grossProfit: totalRevenue - totalCOGS,
-        totalOperatingExpenses: totalOpEx, totalExpenses,
+        totalRevenue,
+        totalCOGS,
+        grossProfit: totalRevenue - totalCOGS,
+        totalOperatingExpenses: totalOpEx,
+        totalExpenses,
         netIncome: totalRevenue - totalExpenses,
-        totalCurrentAssets, totalFixedAssets, totalAssets,
-        totalCurrentLiabilities, totalLongTermLiabilities, totalLiabilities, totalEquity,
+        totalCurrentAssets,
+        totalFixedAssets,
+        totalAssets,
+        totalCurrentLiabilities,
+        totalLongTermLiabilities,
+        totalLiabilities,
+        totalEquity,
         workingCapital: totalCurrentAssets - totalCurrentLiabilities,
         revenueAccountCount: Object.keys(financialData.revenue).length,
         expenseAccountCount: Object.keys(financialData.operatingExpenses).length + Object.keys(financialData.costOfGoodsSold).length,
@@ -588,6 +767,11 @@ const accountClassification = {
         chartCount: chartImages.length
       };
     }
+
+    function sumCategory(category) {
+      return Object.values(financialData[category] || {}).reduce((sum, val) => sum + (val || 0), 0);
+    }
+
 
     // ---------- UI: Preview & PDF ----------
     function generateReport(){
@@ -607,7 +791,7 @@ const accountClassification = {
       generatePreview(companyName, reportPeriod);
       document.getElementById('downloadPdf').onclick = e => {
         e.preventDefault();
-        const fileName = \`\${companyName.replace(/\\s+/g, '_')}_\${reportPeriod.replace(/\\s+/g, '_')}_Financial_Report\`;
+        const fileName = `${companyName.replace(/\s+/g, '_')}_${reportPeriod.replace(/\s+/g, '_')}_Enhanced_Financial_Report`;
         generatePDF(companyName, reportPeriod, fileName);
       };
     }
@@ -615,13 +799,13 @@ const accountClassification = {
       const el = document.getElementById('previewContent');
       const t = financialData.totals;
       const logo = logoDataURL
-        ? \`<img src="\${logoDataURL}" style="max-width:150px;max-height:80px;margin-bottom:20px;border-radius:8px;"/>\`
+        ? `<img src="\${logoDataURL}" style="max-width:150px;max-height:80px;margin-bottom:20px;border-radius:8px;"/>`
         : '<div style="background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;padding:15px 25px;border-radius:8px;display:inline-block;margin-bottom:20px;font-weight:bold;">ARISE TAX</div>';
       const recos = (document.getElementById('customRecommendations').value || '')
         .split(/\\n+/).map(s=>s.trim()).filter(Boolean);
       const recosHtml = recos.length ? ('<ul>' + recos.map(r=>'<li>'+escapeHtml(r)+'</li>').join('') + '</ul>') : '<p class="muted">No custom recommendations added.</p>';
       
-      el.innerHTML = \`
+      el.innerHTML = `
         <div style="text-align:center;margin-bottom:40px;padding:40px;background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;border-radius:15px;">
           \${logo}
           <h1 style="margin:15px 0;">Financial Report Package</h1>
@@ -639,107 +823,614 @@ const accountClassification = {
           <h3 style="margin:0 0 12px 0;color:#111827">Recommendations</h3>
           \${recosHtml}
         </div>
-      \`;
+      `;
     }
     function pct(n,d){ if(!d) return '—'; return (100 * (n||0)/d).toFixed(1)+'%'; }
     function formatCurrency(v){ const n = Number(v||0); return n.toLocaleString(undefined, {style:'currency', currency:'USD'}); }
     function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
     function colorFromInput(id, fallback){ const el = document.getElementById(id); return (el && el.value) ? el.value : fallback; }
 
-    // ---------- PDF ----------
-    async function generatePDF(companyName, reportPeriod, fileName){
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF({unit:'mm', format:'a4', orientation: 'portrait'});
-      const accent = colorFromInput('pdfAccent', '#1e3a8a');
-      const textColor = colorFromInput('pdfTextColor', '#1f2937');
-      const t = financialData.totals;
-
-      const brand = hexToRgb(accent);
-      const txt = hexToRgb(textColor);
-
-      // Cover
-      doc.setFillColor(brand.r, brand.g, brand.b);
-      doc.rect(0,0,210,60,'F');
-      if (logoDataURL) {
-        try { doc.addImage(logoDataURL, 'PNG', 20, 18, 40, 20); } catch {}
+    // Report generation
+    function generateReport() {
+      const companyName = document.getElementById('companyName').value.trim();
+      const reportPeriod = document.getElementById('reportPeriod').value.trim();
+      
+      if (!companyName || !reportPeriod) {
+        alert('Please fill in company name and report period.');
+        return;
       }
-      doc.setTextColor(255,255,255);
-      doc.setFont('helvetica','bold'); doc.setFontSize(18);
-      doc.text('Financial Report Package', 70, 25);
-      doc.setFontSize(14); doc.text(companyName, 70, 35);
-      doc.setFontSize(12); doc.text(reportPeriod, 70, 43);
-      doc.setFontSize(10); doc.text('Prepared by ' + (document.getElementById('preparedBy').value || 'Arise Tax Services'), 70, 51);
-      doc.setTextColor(txt.r, txt.g, txt.b);
+      
+      document.getElementById('processing').style.display = 'block';
+      document.getElementById('generateBtn').disabled = true;
+      
+      // Add slight delay for UX
+      setTimeout(processReports, 600);
+    }
 
-      // KPIs
-      const y0 = 75;
-      const cards = [
-        ['Total Revenue', formatCurrency(t.totalRevenue||0)],
-        ['Gross Profit', formatCurrency(t.grossProfit||0)],
-        ['Net Income', formatCurrency(t.netIncome||0)],
-        ['Working Capital', formatCurrency(t.workingCapital||0)],
-      ];
-      const cardW = 90, cardH = 22, gap = 10;
-      let x = 15, y = y0;
-      doc.setDrawColor(230);
-      cards.forEach((c,i)=>{
-        doc.setFillColor(248,250,252); // surface-2
-        doc.roundedRect(x, y, cardW, cardH, 3, 3, 'FD');
-        doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.text(c[0], x+6, y+8);
-        doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(brand.r, brand.g, brand.b); doc.text(c[1], x+6, y+16);
-        doc.setTextColor(txt.r, txt.g, txt.b);
-        x += cardW + gap;
-        if (x + cardW > 195){ x = 15; y += cardH + gap; }
+    function processReports() {
+      document.getElementById('processing').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('reportPreview').style.display = 'block';
+
+      const companyName = document.getElementById('companyName').value;
+      const reportPeriod = document.getElementById('reportPeriod').value;
+
+      generatePreview(companyName, reportPeriod);
+      
+       document.getElementById('downloadPdf').onclick = e => {
+        e.preventDefault();
+        const fileName = `${companyName.replace(/\s+/g, '_')}_${reportPeriod.replace(/\s+/g, '_')}_Enhanced_Financial_Report`;
+        generatePDF(companyName, reportPeriod, fileName);
+      };
+    }
+
+    function generatePreview(companyName, reportPeriod) {
+      const el = document.getElementById('previewContent');
+      const totals = financialData.totals;
+      
+      const logo = logoDataURL
+        ? `<img src="${logoDataURL}" style="max-width:150px;max-height:80px;margin-bottom:20px;border-radius:8px;"/>`
+        : '<div style="background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;padding:15px 25px;border-radius:8px;display:inline-block;margin-bottom:20px;font-weight:bold;">ARISE TAX</div>';
+      
+      const profitabilityStatus = totals.netIncome >= 0 ? 
+        { color: '#22c55e', status: 'Profitable', message: 'Strong financial performance' } :
+        { color: '#ef4444', status: 'Loss', message: 'Review required' };
+
+      el.innerHTML = `
+        <div style="text-align:center;margin-bottom:40px;padding:40px;background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;border-radius:15px;">
+          ${logo}
+          <h1 style="margin:15px 0;">Enhanced Financial Report Package</h1>
+          <h2 style="margin:10px 0;">${companyName}</h2>
+          <h3 style="margin:10px 0;">${reportPeriod}</h3>
+          <p style="opacity:0.9;">Prepared by ${document.getElementById('preparedBy').value}</p>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:25px;margin:40px 0;">
+          <div style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:25px;border-radius:15px;text-align:center;box-shadow:0 4px 15px rgba(34,197,94,0.3);">
+            <h4 style="margin:0 0 10px 0;opacity:0.9;">Total Revenue</h4>
+            <h2 style="margin:0 0 8px 0;">${formatCurrency(totals.totalRevenue || 0)}</h2>
+            <small>${totals.revenueAccountCount} revenue streams</small>
+          </div>
+          <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:25px;border-radius:15px;text-align:center;box-shadow:0 4px 15px rgba(245,158,11,0.3);">
+            <h4 style="margin:0 0 10px 0;opacity:0.9;">Gross Profit</h4>
+            <h2 style="margin:0 0 8px 0;">${formatCurrency(totals.grossProfit || 0)}</h2>
+            <small>${totals.totalRevenue > 0 ? ((totals.grossProfit / totals.totalRevenue) * 100).toFixed(1) : '0.0'}% margin</small>
+          </div>
+          <div style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;padding:25px;border-radius:15px;text-align:center;box-shadow:0 4px 15px rgba(59,130,246,0.3);">
+            <h4 style="margin:0 0 10px 0;opacity:0.9;">Total Expenses</h4>
+            <h2 style="margin:0 0 8px 0;">${formatCurrency(totals.totalExpenses || 0)}</h2>
+            <small>${totals.expenseAccountCount} expense categories</small>
+          </div>
+          <div style="background:linear-gradient(135deg,${profitabilityStatus.color},${profitabilityStatus.color}dd);color:white;padding:25px;border-radius:15px;text-align:center;box-shadow:0 4px 15px ${profitabilityStatus.color}50;">
+            <h4 style="margin:0 0 10px 0;opacity:0.9;">Net Income</h4>
+            <h2 style="margin:0 0 8px 0;">${formatCurrency(totals.netIncome || 0)}</h2>
+            <small>${profitabilityStatus.status}</small>
+          </div>
+        </div>
+        
+        <div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);padding:30px;border-left:6px solid #4a4fb5;border-radius:0 15px 15px 0;margin:30px 0;">
+          <h3 style="color:#4a4fb5;margin-bottom:20px;">Enhanced Analysis Summary</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
+            <div>
+              <strong style="color:#374151;">Account Categorization</strong><br/>
+              <span style="color:#6b7280;">Revenue: ${totals.revenueAccountCount}</span><br/>
+              <span style="color:#6b7280;">Expenses: ${totals.expenseAccountCount}</span><br/>
+              <span style="color:#6b7280;">Assets: ${totals.assetAccountCount}</span>
+            </div>
+            <div>
+              <strong style="color:#374151;">Balance Sheet Health</strong><br/>
+              <span style="color:#6b7280;">Total Assets: ${formatCurrency(totals.totalAssets || 0)}</span><br/>
+              <span style="color:#6b7280;">Working Capital: ${formatCurrency(totals.workingCapital || 0)}</span>
+            </div>
+            <div>
+              <strong style="color:#374151;">Visual Analytics</strong><br/>
+              <span style="color:#6b7280;">Dashboard Charts: ${totals.chartCount}</span><br/>
+              <span style="color:#6b7280;">Special Reports: ${getSpecialReportCount()}</span>
+            </div>
+          </div>
+        </div>
+        
+        ${totals.chartCount > 0 ? `
+          <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);padding:25px;border-left:6px solid #22c55e;border-radius:0 15px 15px 0;margin:25px 0;">
+            <h3 style="color:#22c55e;margin-bottom:15px;">Dashboard Charts Integrated</h3>
+            ${chartImages.map(chart => `<p style="margin:5px 0;color:#374151;">• ${chart.name} (${chart.category})</p>`).join('')}
+          </div>
+        ` : ''}
+        
+        <div style="background:${profitabilityStatus.color}20;padding:25px;border-left:6px solid ${profitabilityStatus.color};border-radius:0 15px 15px 0;margin:25px 0;">
+          <h3 style="color:${profitabilityStatus.color};margin-bottom:10px;">Financial Health Status</h3>
+          <p style="color:#374151;">${profitabilityStatus.message} - ${getHealthRecommendation()}</p>
+        </div>
+      `;
+    }
+
+    function getSpecialReportCount() {
+      let count = 0;
+      if (financialData.balanceSheet) count++;
+      if (financialData.arAging) count++;
+      if (financialData.apAging) count++;
+      return count;
+    }
+
+    function getHealthRecommendation() {
+      const totals = financialData.totals;
+      if (totals.netIncome >= 0) {
+        if (totals.grossProfit / totals.totalRevenue > 0.5) {
+          return "Excellent margins and profitability. Consider growth opportunities.";
+        }
+        return "Positive performance. Monitor expense efficiency and scaling opportunities.";
+      } else {
+        if (totals.totalRevenue > 0) {
+          return "Revenue present but expenses exceed income. Focus on cost reduction and revenue optimization.";
+        }
+        return "Comprehensive financial review needed. Analyze revenue generation and expense structure.";
+      }
+    }
+
+    function formatCurrency(amount) {
+      const abs = Math.abs(amount);
+      const formatted = abs.toLocaleString('en-US', { 
+        style: 'currency', 
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0 
       });
+      return amount < 0 ? `(${formatted})` : formatted;
+    }
 
-      // Recommendations
-      const recos = (document.getElementById('customRecommendations').value || '').split(/\\n+/).map(s=>s.trim()).filter(Boolean);
-      if (recos.length){
-        doc.setFont('helvetica','bold'); doc.setFontSize(13);
-        doc.text('Recommendations', 15, y + 18);
-        doc.setFont('helvetica','normal'); doc.setFontSize(11);
-        let yy = y + 26;
-        recos.forEach(r => {
-          const lines = doc.splitTextToSize('• ' + r, 180);
-          doc.text(lines, 20, yy);
-          yy += 6 + 4*(Math.max(lines.length-1,0));
-          if (yy > 280){ doc.addPage(); yy = 20; }
-        });
+    // Enhanced PDF Generation
+    function generatePDF(companyName, reportPeriod, fileName) {
+      const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+      const ariseBlue = [74, 79, 181];
+      const lightBlue = [240, 242, 255];
+      
+      // Helper functions for PDF generation
+      function addHeader(title) {
+        doc.setFillColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+        doc.rect(0, 0, 210, 35, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text(title, 105, 22, { align: 'center' });
       }
-
-      // Charts (thumbnails)
-      let cy = 200;
-      if (chartImages.length){
-        doc.setFont('helvetica','bold'); doc.setFontSize(13);
-        doc.text('Charts & Visuals', 15, cy - 6);
-        let cx = 15;
-        const thumbW = 80, thumbH = 45, cgap = 10;
-        chartImages.slice(0, 4).forEach(ch => {
-          try { doc.addImage(ch.dataURL, 'PNG', cx, cy, thumbW, thumbH); } catch {}
-          cx += thumbW + cgap;
-          if (cx + thumbW > 195){ cx = 15; cy += thumbH + cgap; }
-        });
+      
+      function addKPICard(x, y, title, value, color) {
+        const rgb = hexToRgb(color);
+        // Shadow
+        doc.setFillColor(200, 200, 200);
+        doc.roundedRect(x + 2, y + 2, 85, 40, 3, 3, 'F');
+        // Main card
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+        doc.setLineWidth(1.5);
+        doc.roundedRect(x, y, 85, 40, 3, 3, 'FD');
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text(title, x + 6, y + 12);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(rgb.r, rgb.g, rgb.b);
+        doc.text(String(value), x + 6, y + 28);
       }
-
-      // Footer
+     
+      function addTable(startX, startY, columns, rows, options = {}) {
+        const opts = {
+          headerColor: '#4a4fb5',
+          rowHeight: 10,
+          fontSize: 8,
+          maxWidth: 170,
+          alignRight: [],
+          ...options
+        };
+        
+        const colWidth = opts.maxWidth / columns.length;
+        let y = startY;
+        
+        // Header
+        const headerRgb = hexToRgb(opts.headerColor);
+        doc.setFillColor(headerRgb.r, headerRgb.g, headerRgb.b);
+        doc.rect(startX, y - 8, opts.maxWidth, 12, 'F');
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        
+        columns.forEach((col, i) => {
+          const x = startX + (i * colWidth) + 3;
+          const align = opts.alignRight.includes(i) ? 'right' : 'left';
+          const textX = align === 'right' ? x + colWidth - 6 : x;
+          doc.text(String(col), textX, y, { align });
+        });
+        
+        y += 8;
+        
+        // Rows
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(opts.fontSize);
+        doc.setTextColor(31, 41, 55);
+        
+        const maxRows = Math.min(rows.length, 25);
+        for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
+          const row = rows[rowIdx];
+          
+          if (rowIdx % 2 === 0) {
+            doc.setFillColor(248, 250, 252);
+            doc.rect(startX, y - 6, opts.maxWidth, opts.rowHeight, 'F');
+          }
+          
+          row.forEach((cell, i) => {
+            const x = startX + (i * colWidth) + 3;
+            const align = opts.alignRight.includes(i) ? 'right' : 'left';
+            const textX = align === 'right' ? x + colWidth - 6 : x;
+            const cellText = String(cell || '').slice(0, 30);
+            doc.text(cellText, textX, y, { align });
+          });
+          
+          y += opts.rowHeight;
+          
+          if (y > 250) break;
+        }
+        
+        return y;
+      }
+      
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 74, g: 79, b: 181 };
+      }
+      
+      // PAGE 1: Cover Page
+      doc.setFillColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.rect(0, 0, 210, 30, 'F');
+      
+      // Logo area
+      doc.setFillColor(lightBlue[0], lightBlue[1], lightBlue[2]);
+      doc.rect(60, 50, 90, 50, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(60, 50, 90, 50, 'S');
+      
+      if (logoDataURL) {
+        try {
+          doc.addImage(logoDataURL, 'JPEG', 70, 60, 70, 30);
+        } catch (e) {
+          doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(20);
+          doc.text('ARISE TAX', 105, 78, { align: 'center' });
+        }
+      } else {
+        doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('ARISE TAX', 105, 78, { align: 'center' });
+      }
+      
+      doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(24);
+      doc.text('Enhanced Financial Report', 105, 130, { align: 'center' });
+      
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(18);
+      doc.text(companyName, 105, 150, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text(reportPeriod, 105, 165, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Prepared by: ' + document.getElementById('preparedBy').value, 105, 220, { align: 'center' });
+      doc.text('Date: ' + new Date().toLocaleDateString(), 105, 230, { align: 'center' });
+      
+      doc.setFillColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.rect(0, 270, 210, 27, 'F');
+      
+      // PAGE 2: Executive Summary
+      doc.addPage();
+      addHeader('Executive Summary');
+      
+      const totals = financialData.totals;
+      let y = 55;
+      
+      // KPI Cards
+      addKPICard(15, y, 'Total Revenue', formatCurrency(totals.totalRevenue || 0), '#22c55e');
+      addKPICard(110, y, 'Gross Profit', formatCurrency(totals.grossProfit || 0), '#3b82f6');
+      
+      y += 50;
+      addKPICard(15, y, 'Total Expenses', formatCurrency(totals.totalExpenses || 0), '#f59e0b');
+      addKPICard(110, y, 'Net Income', formatCurrency(totals.netIncome || 0), totals.netIncome >= 0 ? '#22c55e' : '#ef4444');
+      
+      y += 60;
+      
+      // Summary stats
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.text('Financial Overview', 20, y);
+      y += 15;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(55, 65, 81);
+      
+      const summaryItems = [
+        `Revenue Accounts: ${totals.revenueAccountCount}`,
+        `Expense Accounts: ${totals.expenseAccountCount}`,
+        `Total Assets: ${formatCurrency(totals.totalAssets || 0)}`,
+        `Working Capital: ${formatCurrency(totals.workingCapital || 0)}`,
+        `Gross Margin: ${totals.totalRevenue > 0 ? ((totals.grossProfit / totals.totalRevenue) * 100).toFixed(1) : '0.0'}%`
+      ];
+      
+      summaryItems.forEach(item => {
+        doc.text(`• ${item}`, 25, y);
+        y += 8;
+      });
+      
+      y += 15;
+      
+      // Health indicator
+      const isProfit = totals.netIncome >= 0;
+      doc.setFillColor(isProfit ? 220 : 254, isProfit ? 252 : 226, isProfit ? 231 : 226);
+      doc.rect(20, y - 10, 170, 25, 'F');
+      doc.setDrawColor(isProfit ? 34 : 239, isProfit ? 197 : 68, isProfit ? 94 : 68);
+      doc.rect(20, y - 10, 170, 25, 'S');
+      
+      doc.setTextColor(isProfit ? 34 : 239, isProfit ? 197 : 68, isProfit ? 94 : 68);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(isProfit ? 'Profitable Operations' : 'Operating at a Loss', 25, y);
+      
+      doc.setFont('helvetica', 'normal');
       doc.setFontSize(9);
-      doc.text('Generated by Arise QBO Report Package Generator', 15, 290);
-
-      doc.save(fileName + '.pdf');
+      doc.setTextColor(55, 65, 81);
+      const healthMsg = isProfit ? 'Strong financial performance with positive net income' : 'Immediate attention required - review expense structure and revenue optimization';
+      doc.text(healthMsg, 25, y + 8);
+      
+      // PAGE 3: Revenue Analysis
+      if (Object.keys(financialData.revenue).length > 0) {
+        doc.addPage();
+        addHeader('Revenue Analysis');
+        
+        const revenueEntries = Object.entries(financialData.revenue).sort((a, b) => b[1] - a[1]);
+        const revenueTotal = totals.totalRevenue || 0;
+        
+        const revenueRows = revenueEntries.slice(0, 20).map(([name, amount]) => {
+          const percentage = revenueTotal > 0 ? (amount / revenueTotal * 100) : 0;
+          return [
+            name.slice(0, 40),
+            formatCurrency(amount),
+            percentage.toFixed(1) + '%'
+          ];
+        });
+        
+        addTable(20, 60, ['Revenue Source', 'Amount', '% Share'], revenueRows, {
+          alignRight: [1, 2],
+          headerColor: '#22c55e'
+        });
+      }
+      
+      // PAGE 4: Expense Analysis  
+      if (totals.expenseAccountCount > 0) {
+        doc.addPage();
+        addHeader('Expense Analysis');
+        
+        const allExpenses = {
+          ...financialData.operatingExpenses,
+          ...financialData.costOfGoodsSold,
+          ...financialData.otherExpenses
+        };
+        
+        const expenseEntries = Object.entries(allExpenses).sort((a, b) => b[1] - a[1]);
+        const expenseTotal = totals.totalExpenses || 0;
+        
+        const expenseRows = expenseEntries.slice(0, 20).map(([name, amount]) => {
+          const percentage = expenseTotal > 0 ? (amount / expenseTotal * 100) : 0;
+          return [
+            name.slice(0, 40),
+            formatCurrency(amount),
+            percentage.toFixed(1) + '%'
+          ];
+        });
+        
+        addTable(20, 60, ['Expense Category', 'Amount', '% Share'], expenseRows, {
+          alignRight: [1, 2],
+          headerColor: '#3b82f6'
+        });
+      }
+      
+      // PAGE 5: Balance Sheet Analysis
+      if (totals.totalAssets > 0) {
+        doc.addPage();
+        addHeader('Balance Sheet Analysis');
+        
+        let y = 50;
+        
+        // Assets section
+        if (Object.keys(financialData.currentAssets).length > 0 || Object.keys(financialData.fixedAssets).length > 0) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+          doc.text('ASSETS', 20, y);
+          y += 10;
+          
+          // Current Assets
+          if (Object.keys(financialData.currentAssets).length > 0) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.text('Current Assets', 25, y);
+            y += 8;
+            
+            Object.entries(financialData.currentAssets).slice(0, 10).forEach(([name, amount]) => {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(9);
+              doc.setTextColor(55, 65, 81);
+              doc.text(name.slice(0, 45), 30, y);
+              doc.text(formatCurrency(amount), 180, y, { align: 'right' });
+              y += 7;
+            });
+            y += 5;
+          }
+          
+          // Fixed Assets  
+          if (Object.keys(financialData.fixedAssets).length > 0) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+            doc.text('Fixed Assets', 25, y);
+            y += 8;
+            
+            Object.entries(financialData.fixedAssets).slice(0, 10).forEach(([name, amount]) => {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(9);
+              doc.setTextColor(55, 65, 81);
+              doc.text(name.slice(0, 45), 30, y);
+              doc.text(formatCurrency(amount), 180, y, { align: 'right' });
+              y += 7;
+            });
+            y += 10;
+          }
+          
+          // Total Assets
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+          doc.text('Total Assets', 25, y);
+          doc.text(formatCurrency(totals.totalAssets), 180, y, { align: 'right' });
+          y += 15;
+        }
+        
+        // Liabilities section
+        if (Object.keys(financialData.currentLiabilities).length > 0 || Object.keys(financialData.longTermLiabilities).length > 0) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+          doc.text('LIABILITIES', 20, y);
+          y += 10;
+          
+          // Current Liabilities
+          if (Object.keys(financialData.currentLiabilities).length > 0) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.text('Current Liabilities', 25, y);
+            y += 8;
+            
+            Object.entries(financialData.currentLiabilities).slice(0, 8).forEach(([name, amount]) => {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(9);
+              doc.setTextColor(55, 65, 81);
+              doc.text(name.slice(0, 45), 30, y);
+              doc.text(formatCurrency(amount), 180, y, { align: 'right' });
+              y += 7;
+            });
+          }
+        }
+      }
+      
+      // Add special reports if available
+      if (financialData.arAging) {
+        doc.addPage();
+        addHeader('Accounts Receivable Aging');
+        addTable(20, 60, financialData.arAging.columns, financialData.arAging.rows, {
+          headerColor: '#f59e0b',
+          alignRight: [1, 2, 3, 4, 5]
+        });
+      }
+      
+      if (financialData.apAging) {
+        doc.addPage();
+        addHeader('Accounts Payable Aging');
+        addTable(20, 60, financialData.apAging.columns, financialData.apAging.rows, {
+          headerColor: '#ef4444',
+          alignRight: [1, 2, 3, 4, 5]
+        });
+      }
+      
+      // PAGE: Recommendations
+      doc.addPage();
+      addHeader('Recommendations & Action Items');
+      
+      y = 50;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.text('Key Findings & Recommendations', 20, y);
+      y += 15;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(55, 65, 81);
+      
+      const recommendations = getDetailedRecommendations();
+      recommendations.forEach(rec => {
+        doc.text(`• ${rec}`, 25, y);
+        y += 8;
+        if (y > 250) {
+          doc.addPage();
+          y = 50;
+        }
+      });
+      
+      // Footer on last page
+      doc.setFillColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.rect(0, 270, 210, 27, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text('Confidential - Prepared by ' + document.getElementById('preparedBy').value, 105, 285, { align: 'center' });
+      
+      // Save the PDF
+      doc.save(`${fileName}.pdf`);
     }
+    
+     // ===== RECOMMENDATIONS PAGE =====
 
-    // ---------- Helpers ----------
-    function hexToRgb(hex){
-      const c = hex.replace('#','');
-      const bigint = parseInt(c, 16);
-      const r = (bigint >> 16) & 255;
-      const g = (bigint >> 8) & 255;
-      const b = bigint & 255;
-      return {r,g,b};
-    }
-    function logDiag(msg){
-      const d = document.getElementById('diagnostics');
-      if (d) d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+      function getDetailedRecommendations() {
+    
+  	// First check if user provided custom recommendations
+     
+	 const customRecs = document.getElementById('customRecommendations').value.trim();
+      if (customRecs) {
+        return customRecs.split('\n').filter(line => line.trim()).map(line => line.trim());
+      }
+      
+      // Fallback to generated recommendations if no custom input
+      const totals = financialData.totals;
+      const recommendations = [];
+      
+      if (totals.netIncome < 0) {
+        recommendations.push('Immediate action required: Company is operating at a loss');
+        recommendations.push('Conduct detailed expense review to identify cost reduction opportunities');
+        recommendations.push('Analyze revenue streams for growth and optimization potential');
+      } else {
+        recommendations.push('Company shows positive profitability - consider growth strategies');
+      }
+      
+      if (totals.grossProfit / totals.totalRevenue < 0.3) {
+        recommendations.push('Gross margin below 30% - review pricing strategy and cost of goods sold');
+      }
+      
+      if (totals.workingCapital < 0) {
+        recommendations.push('Negative working capital indicates potential cash flow concerns');
+      }
+      
+      if (totals.revenueAccountCount < 3) {
+        recommendations.push('Limited revenue diversification - consider expanding income sources');
+      }
+      
+      if (totals.expenseAccountCount > 50) {
+        recommendations.push('High number of expense categories - consider consolidation for better tracking');
+      }
+      
+      recommendations.push('Regular monthly financial review recommended');
+      recommendations.push('Consider implementing cash flow forecasting');
+      recommendations.push('Review and update chart of accounts for better categorization');
+      
+      return recommendations;
     }
   </script>
 </body>
