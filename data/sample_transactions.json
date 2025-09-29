@@ -1,0 +1,26 @@
+[
+  {
+    "date": "2025-01-02",
+    "category": "Sales",
+    "description": "Subscription renewal",
+    "amount": 249.99
+  },
+  {
+    "date": "2025-01-05",
+    "category": "Sales",
+    "description": "New customer",
+    "amount": 149.5
+  },
+  {
+    "date": "2025-01-05",
+    "category": "Refunds",
+    "description": "Refund to ACME Co.",
+    "amount": -49.99
+  },
+  {
+    "date": "2025-01-08",
+    "category": "Services",
+    "description": "Consulting engagement",
+    "amount": 1200
+  }
+]

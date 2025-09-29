@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "report-generator"
+version = "0.1.0"
+description = "Unified report generator combining two prototype attempts"
+readme = "README.md"
+authors = [{name = "Report Generator Maintainers"}]
+requires-python = ">=3.11"
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/Jshatto/Report_Generator"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["report_generator"]
