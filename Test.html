@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arise Tax — QBO Report Package Generator (Merged)</title>
+  <style>
+    :root{
+      --brand-bg: #0f172a;
+      --brand-surface: #0b1220;
+      --brand-primary: #1e3a8a;
+      --brand-primary-600: #1d4ed8;
+      --brand-ring: #60a5fa;
+      --text-strong: #111827;
+      --text: #1f2937;
+      --text-subtle: #6b7280;
+      --surface: #ffffff;
+      --surface-2: #f8fafc;
+      --line: #e5e7eb;
+      --ok: #16a34a;
+      --warn: #f59e0b;
+      --bad: #dc2626;
+      --shadow-lg: 0 20px 40px rgba(2,6,23,.12), 0 6px 20px rgba(2,6,23,.08);
+      --shadow-md: 0 12px 24px rgba(2,6,23,.10), 0 4px 12px rgba(2,6,23,.06);
+      --radius-xl: 18px;
+      --radius-2xl: 22px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; 
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background:
+        radial-gradient(1200px 600px at -10% -10%, rgba(30,58,138,.25), transparent 60%),
+        radial-gradient(1000px 600px at 110% -20%, rgba(29,78,216,.18), transparent 55%),
+        linear-gradient(180deg, var(--brand-surface), #0b1022 60%);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased; 
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .wrap{max-width:1200px;margin:40px auto;padding:0 24px}
+    .shell{
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-2xl);
+      box-shadow: var(--shadow-lg);
+      overflow:hidden;
+    }
+    .hero{
+      display:grid; 
+      grid-template-columns: 1fr; 
+      gap: 24px;
+      padding: 48px 36px; 
+      background: linear-gradient(180deg, #ffffff, #f9fafb);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand{
+      display:flex;align-items:center;justify-content:center;
+      width:180px;height:100px;margin:0 auto 8px auto;
+      background:#0f172a; color:#fff; border-radius:14px;
+      font-weight:800; letter-spacing:3px; font-size:28px;
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .hero h1{margin:8px 0 6px 0; text-align:center; font-size:28px; color:var(--text-strong)}
+    .hero p{margin:0; text-align:center; color:var(--text-subtle)}
+    .section{padding:32px 36px}
+    .feature-grid{display:grid; gap:16px; grid-template-columns: repeat(auto-fit,minmax(260px,1fr))}
+    .feature{
+      background: var(--surface-2);
+      border:1px solid var(--line);
+      border-radius: 14px; padding:16px 18px;
+    }
+    .feature h4{margin:0 0 10px 0; color: var(--brand-primary); font-size:15px}
+    .feature li{color:#374151; margin:6px 0}
+    .subtle-card{
+      background: var(--surface-2);
+      border:1px solid var(--line);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+    }
+    .drop{
+      border: 2px dashed #cbd5e1;
+      border-radius: var(--radius-2xl);
+      padding:48px; text-align:center; background: #f8fafc;
+      transition:.2s ease; position:relative;
+    }
+    .drop.dragover{border-color: var(--brand-primary); background:#f1f5f9}
+    .u-btn{
+      appearance:none; border:1px solid var(--brand-primary);
+      background: var(--brand-primary);
+      color:#fff; font-weight:700; letter-spacing:.3px;
+      padding:14px 22px; border-radius:999px; cursor:pointer;
+      box-shadow: var(--shadow-md);
+      transition: transform .08s ease, background .15s ease;
+    }
+    .u-btn:hover{background: var(--brand-primary-600)}
+    .u-btn:active{transform: translateY(1px)}
+    .u-btn:focus{outline:none; box-shadow:0 0 0 4px rgba(96,165,250,.5)}
+    .file-list{margin-top:18px}
+    .file{
+      display:flex; align-items:center; justify-content:space-between;
+      background:#fff; border:1px solid var(--line); border-radius:14px;
+      padding:14px 16px; margin:10px 0;
+    }
+    .pill{font-size:11px; font-weight:800; border-radius:999px; padding:6px 10px; letter-spacing:.3px}
+    .pill.pl{background:#e2fbe8; color:#166534; border:1px solid #bbf7d0}
+    .pill.bs{background:#e0e7ff; color:#3730a3; border:1px solid #c7d2fe}
+    .pill.ar{background:#fef9c3; color:#854d0e; border:1px solid #fde68a}
+    .pill.ap{background:#fee2e2; color:#991b1b; border:1px solid #fecaca}
+    .pill.ch{background:#dcfce7; color:#065f46; border:1px solid #a7f3d0}
+    .danger{background:#ef4444; color:#fff; border:none}
+    .danger:hover{background:#dc2626}
+    .grid{display:grid; gap:18px}
+    .grid.two{grid-template-columns: repeat(auto-fit, minmax(260px,1fr))}
+    label{display:block; font-weight:600; color:#334155; margin: 6px 0}
+    input[type="text"], input[type="date"], input[type="color"], textarea{
+      width:100%; padding:12px 14px; border:1px solid var(--line); border-radius:12px;
+      background:#fff; color: var(--text);
+      transition: box-shadow .15s ease, border-color .15s ease;
+    }
+    textarea{min-height:120px; resize:vertical}
+    input:focus, textarea:focus{
+      outline:none; border-color: var(--brand-primary);
+      box-shadow: 0 0 0 4px rgba(96,165,250,.35);
+    }
+    .primary{
+      width:100%; padding:18px 26px; border-radius:999px;
+      border:1px solid var(--brand-primary); background:var(--brand-primary);
+      color:#fff; font-weight:800; letter-spacing:.4px; font-size:16px; cursor:pointer
+    }
+    .primary[disabled]{opacity:.55; cursor:not-allowed}
+    .primary:not([disabled]):hover{background:var(--brand-primary-600)}
+    .center{ text-align:center }
+    .spinner{ width:56px; height:56px; border-radius:50%; border:4px solid #e5e7eb; border-top-color:var(--brand-primary); animation:spin 1s linear infinite; margin: 0 auto 16px }
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .success{
+      background:#ecfdf5; border:1px solid #a7f3d0; color:#065f46;
+      padding:18px; border-radius:14px; margin: 18px 0 8px 0
+    }
+    .dl{ display:inline-block; padding:12px 18px; border-radius:999px; background:var(--brand-primary); color:#fff; text-decoration:none; font-weight:700 }
+    .dl:hover{ background:var(--brand-primary-600) }
+    .preview{background:#fff; border:1px solid var(--line); border-radius: var(--radius-xl); margin-top:22px; overflow:hidden}
+    .preview-h{background: var(--brand-primary); color:#fff; padding:14px 18px; font-weight:800}
+    .preview-c{padding:22px}
+    .kpi-grid{display:grid; gap:16px; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); margin: 18px 0}
+    .kpi{
+      background:#fff; border:1px solid var(--line); border-radius:14px; padding:18px; box-shadow: var(--shadow-md)
+    }
+    .kpi h5{margin:0 0 8px 0; color:#334155; font-size:13px; font-weight:700}
+    .kpi .val{font-size:20px; font-weight:900; color: var(--brand-primary)}
+    .meta{color:var(--text-subtle); font-size:12px}
+    .muted{color:var(--text-subtle)}
+    .mt-16{margin-top:16px}
+    .mt-24{margin-top:24px}
+    .mt-32{margin-top:32px}
+    details.testbox{margin-top:6px}
+    details.testbox summary{cursor:pointer; font-weight:700}
+    details.testbox pre{background:#0f172a; color:#e5e7eb; padding:12px; border-radius:12px; overflow:auto}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="shell">
+      <header class="hero" role="banner">
+        <div class="brand" aria-label="Arise Tax">ARISE</div>
+        <div>
+          <h1>QBO Report Package Generator</h1>
+          <p>Clean, professional reporting with auto‑categorization and optional dashboard images.</p>
+        </div>
+      </header>
+      <section class="section">
+        <div class="feature-grid">
+          <div class="feature">
+            <h4>Smart Account Detection</h4>
+            <ul>
+              <li>P&L vs Balance Sheet auto‑split</li>
+              <li>Revenue / COGS / OpEx recognition</li>
+              <li>Other income & expenses grouping</li>
+            </ul>
+          </div>
+          <div class="feature">
+            <h4>Visual Integration</h4>
+            <ul>
+              <li>Drop in PNG/JPG/PDF dashboard charts</li>
+              <li>Neat typography & spacing</li>
+              <li>On‑brand color system</li>
+            </ul>
+          </div>
+          <div class="feature">
+            <h4>Supported Files</h4>
+            <ul>
+              <li><strong>Financial:</strong> P&L, Balance Sheet, TB (XLSX/CSV)</li>
+              <li><strong>Aging:</strong> A/R & A/P (XLSX/CSV)</li>
+              <li><strong>Visuals:</strong> PNG/JPG/PDF exports</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+      <section class="section">
+        <div id="uploadSection" class="drop" role="region" aria-label="Upload files">
+          <div style="font-size:46px; margin-bottom:10px">📎</div>
+          <div class="muted" style="font-weight:600; margin-bottom:14px">Drag & drop your QBO files and charts here</div>
+          <input type="file" id="fileInput" hidden multiple accept=".xlsx,.xls,.csv,.png,.jpg,.jpeg,.pdf" />
+          <button class="u-btn" type="button" onclick="document.getElementById('fileInput').click()">Choose Files</button>
+          <div id="fileList" class="file-list"></div>
+        </div>
+      </section>
+      <section class="section">
+        <div class="subtle-card">
+          <h3 style="margin:0 0 14px 0; color: var(--brand-primary)">Company Information</h3>
+          <div class="grid two">
+            <div>
+              <label for="companyName">Company Name</label>
+              <input type="text" id="companyName" placeholder="Enter client company name"/>
+            </div>
+            <div>
+              <label for="reportPeriod">Report Period</label>
+              <input type="text" id="reportPeriod" placeholder="e.g., Q1 2025, January 2025"/>
+            </div>
+            <div>
+              <label for="preparedBy">Prepared By</label>
+              <input type="text" id="preparedBy" value="Arise Tax Services"/>
+            </div>
+            <div>
+              <label for="reportDate">Date Prepared</label>
+              <input type="date" id="reportDate"/>
+            </div>
+            <div>
+              <label for="logoUpload">Upload Company Logo (optional)</label>
+              <input type="file" id="logoUpload" accept="image/*"/>
+            </div>
+            <div>
+              <label for="reportNotes">Report Notes (optional)</label>
+              <input type="text" id="reportNotes" placeholder="Any special notes or focus areas"/>
+            </div>
+            <div>
+              <label for="pdfAccent">PDF Accent Color</label>
+              <input type="color" id="pdfAccent" value="#1e3a8a"/>
+            </div>
+            <div>
+              <label for="pdfTextColor">PDF Text Color</label>
+              <input type="color" id="pdfTextColor" value="#1f2937"/>
+            </div>
+            <div style="grid-column: 1/-1">
+              <label for="customRecommendations">Custom Recommendations (optional)</label>
+              <textarea id="customRecommendations" placeholder="Enter your professional recommendations and insights for this client… (one per line)"></textarea>
+              <div class="meta mt-16">Tip: Add bullet points (one per line). These will be included in the PDF.</div>
+            </div>
+          </div>
+        </div>
+        <button id="generateBtn" class="primary mt-24" onclick="generateReport()" disabled>Generate PDF Report Package</button>
+        <details class="testbox mt-16">
+          <summary>Diagnostics / Self‑tests</summary>
+          <pre id="diagnostics">Idle</pre>
+        </details>
+      </section>
+      <section class="section" id="processing" style="display:none">
+        <div class="center">
+          <div class="spinner"></div>
+          <div class="muted">Analyzing, categorizing, and assembling your report…</div>
+        </div>
+      </section>
+      <section class="section" id="results" style="display:none">
+        <div class="success">Report package is ready.</div>
+        <a href="#" class="dl" id="downloadPdf">Download PDF</a>
+        <div class="preview mt-16" id="reportPreview" style="display:none">
+          <div class="preview-h">Preview</div>
+          <div class="preview-c" id="previewContent"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script>
+    // ---------- State ----------
+    let uploadedFiles = [];
+    let parsedData = {};
+    let logoDataURL = null;
+    let chartImages = [];
+    let financialData = {
+      revenue: {}, costOfGoodsSold: {}, operatingExpenses: {}, otherIncome: {}, otherExpenses: {},
+      currentAssets: {}, fixedAssets: {}, otherAssets: {}, currentLiabilities: {}, longTermLiabilities: {}, equity: {},
+      totals: {}, balanceSheet: null, arAging: null, apAging: null, charts: []
+    };
+
+const accountClassification = {
+  revenue: [/^4\d{3}/i, /revenue/i, /sales/i, /income(?!.*tax)/i, /service.*income/i, /consulting.*income/i, /professional.*fees.*income/i ],
+  costOfGoodsSold: [/^5[01]\d{2}/i, /cost.*goods.*sold/i, /cogs/i, /materials/i, /direct.*(cost|labor)/i, /subcontractor/i, /job.*materials/i ],
+  operatingExpenses: [/^5[2-9]\d{2}/i, /^6\d{3}/i, /expense/i, /wages|salary/i, /rent|insurance|utilities|office|travel|meals|phone/i, /advertising|marketing|professional.*fees|supplies|repairs|maintenance|depreciation|payroll.*tax|employment.*tax/i ],
+  currentAssets: [/^1[01]\d{2}/i, /cash|checking|savings|petty.*cash|undeposited/i, /accounts.*receivable|a\/r|receivable/i, /inventory|prepaid|short.*term.*investment/i ],
+  fixedAssets: [/^1[2-9]\d{2}/i, /equipment|furniture|building|land|vehicle|computer|machinery|tools|fixed.*asset|property/i, /accumulated.*depreciation|depreciation/i ],
+  currentLiabilities: [/^2[01]\d{2}/i, /accounts.*payable|a\/p|payable|accrued/i, /payroll.*liabilit|employment.*tax|sales.*tax|use.*tax|short.*term.*debt|credit.*card|line.*credit/i ],
+  longTermLiabilities: [/^2[2-9]\d{2}/i, /long.*term.*debt|mortgage|loan|note.*payable|bond|lease.*liability|equipment.*loan|vehicle.*loan/i ],
+  equity: [/^3\d{3}/i, /equity|capital|retained.*earnings|owner.*equity|partner.*capital|common.*stock|preferred.*stock|drawing|distribution/i ]
+};
+
+    // ---------- Boot ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      const today = new Date();
+      const v = today.getFullYear()+ '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
+      document.getElementById('reportDate').value = v;
+      setupFileUpload();
+      setupLogoUpload();
+      logDiag('Ready');
+    });
+
+    // ---------- Uploads ----------
+    function setupFileUpload(){
+      const drop = document.getElementById('uploadSection');
+      const input = document.getElementById('fileInput');
+      ['dragover','dragenter'].forEach(evt => drop.addEventListener(evt, e=>{ e.preventDefault(); drop.classList.add('dragover'); }));
+      ['dragleave','drop'].forEach(evt => drop.addEventListener(evt, ()=> drop.classList.remove('dragover')));
+      drop.addEventListener('drop', e=>{ e.preventDefault(); handleFiles(e.dataTransfer.files); });
+      input.addEventListener('change', e=> handleFiles(e.target.files));
+    }
+    function setupLogoUpload(){
+      document.getElementById('logoUpload').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if(!file) return;
+        const r = new FileReader();
+        r.onload = ev => logoDataURL = ev.target.result;
+        r.readAsDataURL(file);
+      });
+    }
+    function handleFiles(files){
+      for(let i=0;i<files.length;i++){
+        const f = files[i];
+        if(!isValidFileType(f)){
+          alert(f.name + " is not supported. Upload Excel, CSV, PNG, JPG, or PDF.");
+          continue;
+        }
+        uploadedFiles.push(f);
+        renderFileBadge(f);
+        if(isImageFile(f) || isPDFFile(f)) processChartFile(f); else parseFinancialFile(f);
+      }
+      updateGenerateButton();
+    }
+    function isValidFileType(file){
+      const validMimes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet','application/vnd.ms-excel','text/csv','application/pdf','image/png','image/jpeg'];
+      const validExt = /\\.(xlsx|xls|csv|png|jpg|jpeg|pdf)$/i;
+      return validMimes.includes(file.type) || validExt.test(file.name);
+    }
+    const isImageFile = f => (f.type && f.type.startsWith('image/')) || /\\.(png|jpe?g)$/i.test(f.name||'');
+    const isPDFFile = f => (f.type === 'application/pdf') || /\\.pdf$/i.test(f.name||'');
+    function renderFileBadge(file){
+      const list = document.getElementById('fileList');
+      const div = document.createElement('div');
+      div.className = 'file';
+      div.dataset.filename = file.name;
+      const sizeKB = (file.size/1024).toFixed(1);
+      const badge = getPill(file.name);
+      div.innerHTML = `
+        <div style="display:flex; align-items:center; gap:12px">
+          <div style="font-size:20px">\${isImageFile(file)||isPDFFile(file)?'🖼️':'📄'}</div>
+          <div>
+            <div style="font-weight:700">\${file.name}</div>
+            <div class="meta">\${sizeKB} KB • \${describe(file.name)}</div>
+          </div>
+          \${badge}
+        </div>
+        <button class="u-btn danger" data-fn="\${file.name}" onclick="removeFile(this.dataset.fn)">Remove</button>
+      `;
+      list.appendChild(div);
+    }
+    function getPill(name){
+      const n = name.toLowerCase();
+      if(/p&l|profit|income|p l|\\bpl\\b/.test(n)) return '<span class="pill pl">P&L</span>';
+      if(/balance.*sheet/.test(n)) return '<span class="pill bs">Balance Sheet</span>';
+      if(/a\\/r|receivable|\\bar\\b /.test(n)) return '<span class="pill ar">A/R</span>';
+      if(/a\\/p|payable|\\bap\\b /.test(n)) return '<span class="pill ap">A/P</span>';
+      if(/trial.*balance/.test(n)) return '<span class="pill bs">Trial Balance</span>';
+      if(/png|jpg|jpeg|pdf$/.test(n)) return '<span class="pill ch">Chart</span>';
+      return '<span class="pill pl">Financial</span>';
+    }
+    function describe(name){
+      const n = name.toLowerCase();
+      if(/png|jpg|jpeg|pdf$/.test(n)) return 'Dashboard Chart';
+      if(/p&l|profit/.test(n)) return 'Profit & Loss';
+      if(/balance.*sheet/.test(n)) return 'Balance Sheet';
+      if(/a\\/r|receivable/.test(n)) return 'A/R Aging';
+      if(/a\\/p|payable/.test(n)) return 'A/P Aging';
+      if(/trial.*balance/.test(n)) return 'Trial Balance';
+      return 'Financial Report';
+    }
+    function removeFile(name){
+      uploadedFiles = uploadedFiles.filter(f=>f.name!==name);
+      delete parsedData[name];
+      chartImages = chartImages.filter(c=>c.name!==name);
+      financialData.charts = financialData.charts.filter(c=>c.name!==name);
+      document.querySelectorAll('.file').forEach(el=>{ if(el.dataset.filename===name) el.remove(); });
+      updateGenerateButton();
+    }
+    function updateGenerateButton(){
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = uploadedFiles.length===0;
+      btn.textContent = uploadedFiles.length? \`Generate PDF Report Package (\${uploadedFiles.length} files)\` : 'Generate PDF Report Package';
+    }
+    function processChartFile(file){
+      const r = new FileReader();
+      r.onload = e => {
+        const obj = { name:file.name, dataURL:e.target.result, type: chartType(file.name), category: chartCategory(file.name) };
+        chartImages.push(obj); financialData.charts.push(obj);
+      }
+      r.readAsDataURL(file);
+    }
+    const chartType = n => /revenue|sales|income/i.test(n)?'revenue': /expense|cost/i.test(n)?'expense': /cash|flow/i.test(n)?'cashflow': /balance|assets|liabilities/i.test(n)?'balance': /profit|p&l|pl/i.test(n)?'profitloss':'general';
+    const chartCategory = n => /dashboard/i.test(n)?'Dashboard': /trend/i.test(n)?'Trend Analysis': /comparison/i.test(n)?'Comparison':'Financial Chart';
+
+    // ---------- Parsing ----------
+    function parseFinancialFile(file){
+      try{
+        if(/csv$/i.test(file.name) || (file.type||'').includes('csv')){
+          const r = new FileReader();
+          r.onload = e => { parsedData[file.name] = parseCSV(e.target.result); processFinancialData(file.name, parsedData[file.name]); };
+          r.readAsText(file);
+        }else{
+          const r = new FileReader();
+          r.onload = e => { const wb = XLSX.read(e.target.result, {type:'array'}); parsedData[file.name] = parseWorkbook(wb); processFinancialData(file.name, parsedData[file.name]); };
+          r.readAsArrayBuffer(file);
+        }
+      }catch(err){ console.error('Parse error:', file.name, err); alert(\`Error parsing \${file.name}: \${err.message}\`); }
+    }
+    function parseCSV(text){
+      const lines = text.split(/\\r?\\n/); const headers = (lines[0]||'').split(',').map(h=>h.trim().replace(/"/g,''));
+      const data=[]; for(let i=1;i<lines.length;i++){ if(!lines[i].trim()) continue; const vals = lines[i].split(',').map(v=>v.trim().replace(/"/g,'')); const row={}; headers.forEach((h,idx)=> row[h] = vals[idx]||''); data.push(row); }
+      return {headers, data, type:'csv'};
+    }
+    function parseWorkbook(wb){
+      const out = {sheets:{}, type:'excel'}; wb.SheetNames.forEach(n=>{ const ws = wb.Sheets[n]; const arr = XLSX.utils.sheet_to_json(ws,{header:1, defval:""}); if(!arr.length) return;
+        const headers = arr[0]||[]; const data=[];
+        for(let r=1;r<arr.length;r++){ const rowArr = arr[r]; if(!rowArr.some(v=>v!=="" && v!==null)) continue; const row={}; headers.forEach((h,i)=> row[h||('Column_'+i)] = rowArr[i]||''); data.push(row); }
+        out.sheets[n] = {headers, data};
+      });
+      return out;
+    }
+
+    // ---------- Categorize & Totals ----------
+    function categorizeAccount(accountName){
+      if(!accountName) return 'operatingExpenses';
+      const name = String(accountName).trim().toLowerCase(); if(!name) return 'operatingExpenses';
+      for (const [category, patterns] of Object.entries(accountClassification)) {
+        for (const pattern of patterns) { if (pattern.test(name)) return category; }
+      }
+      if (/^1\\d{3}/.test(name)) return 'currentAssets';
+      if (/^2\\d{3}/.test(name)) return 'currentLiabilities';
+      if (/^3\\d{3}/.test(name)) return 'equity';
+      if (/^4\\d{3}/.test(name)) return 'revenue';
+      if (/^5\\d{3}/.test(name)) return 'operatingExpenses';
+      if (/^6\\d{3}/.test(name)) return 'operatingExpenses';
+      return 'operatingExpenses';
+    }
+    function processFinancialData(fileName, fileData){
+      try{
+        const data = fileData.type === 'excel' ? (Object.values(fileData.sheets)[0]?.data || []) : (fileData.data || []);
+        data.forEach(row => {
+          try {
+            const accountName = getAccountName(row);
+            const amount = getAmount(row);
+            if (accountName && amount !== null && Math.abs(amount) > 0.01) {
+              const category = categorizeAccount(accountName);
+              if (financialData[category]) {
+                financialData[category][accountName] = (financialData[category][accountName] || 0) + amount;
+              }
+            }
+          } catch (rowError) { console.warn('Row error:', rowError); }
+        });
+        processSpecialReports(fileName, fileData);
+        calculateTotals();
+      }catch(error){ console.error('processFinancialData:', error); }
+    }
+    function getHeaders(fileData){
+      return fileData.type === 'excel' ? (Object.values(fileData.sheets)[0]?.headers || []) : (fileData.headers || []);
+    }
+    function isBalanceSheetFile(fileName, fileData){
+      const name = fileName.toLowerCase(); if (name.includes('balance') && name.includes('sheet')) return true;
+      const headers = getHeaders(fileData); return headers.some(h => /assets|liabilities|equity/i.test(String(h)));
+    }
+    function isARAgingFile(fileName, fileData){
+      const name = fileName.toLowerCase(); if (name.includes('a/r') || name.includes('receivable')) return true;
+      const headers = getHeaders(fileData);
+      return headers.some(h => /customer/i.test(h)) && headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
+    }
+    function isAPAgingFile(fileName, fileData){
+      const name = fileName.toLowerCase(); if (name.includes('a/p') || name.includes('payable')) return true;
+      const headers = getHeaders(fileData);
+      return headers.some(h => /vendor/i.test(h)) && headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
+    }
+    function processSpecialReports(fileName, fileData){
+      try{
+        if (!financialData.balanceSheet && isBalanceSheetFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.balanceSheet = processBalanceSheetData(sheet);
+        }
+        if (!financialData.arAging && isARAgingFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.arAging = processAgingData(sheet, 'customer');
+        }
+        if (!financialData.apAging && isAPAgingFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.apAging = processAgingData(sheet, 'vendor');
+        }
+      }catch(e){ console.warn('special reports:', e); }
+    }
+    function processBalanceSheetData(sheet){
+      const headers = sheet.headers || []; const rows = sheet.data || [];
+      const nameIndex = headers.findIndex(h => /name|account|description/i.test(String(h)));
+      const amountIndex = headers.findIndex(h => /amount|total|balance|value/i.test(String(h)));
+      const processedRows = rows.slice(0, 200).map(row => [
+        nameIndex >= 0 ? (row[headers[nameIndex]] || '') : '',
+        amountIndex >= 0 ? (row[headers[amountIndex]] || '') : ''
+      ]).filter(row => row[0] && row[1]);
+      return { columns: ['Account', 'Amount'], rows: processedRows };
+    }
+    function processAgingData(sheet, entityType){
+      const headers = sheet.headers || []; const rows = sheet.data || [];
+      const entityPattern = entityType === 'customer' ? /customer/i : /vendor/i;
+      const relevantHeaders = headers.filter(h => entityPattern.test(String(h)) || /(current|1-30|31-60|61-90|over|total)/i.test(String(h)));
+      const processedRows = rows.slice(0, 200).map(row => relevantHeaders.map(header => row[header] || '')).filter(row => row.some(cell => cell));
+      return { columns: relevantHeaders, rows: processedRows };
+    }
+    function getAccountName(row){
+      const candidates = ['Name', 'Account', 'Description', 'Account Name', 'Distribution account'];
+      for (const field of candidates) { if (row[field] && String(row[field]).trim()) return String(row[field]).trim(); }
+      for (const [key, value] of Object.entries(row)) {
+        if (typeof value === 'string' && value.trim() && !value.match(/^\\$?[\\d,\\.\\-()]+$/) && value.length > 2) return value.trim();
+      }
+      return null;
+    }
+    function getAmount(row){
+      const candidates = ['Amount', 'Total', 'Balance', 'Value', 'Current', 'Current Period'];
+      for (const field of candidates) { if (row[field] !== undefined && row[field] !== '') { const parsed = parseAmount(row[field]); if (parsed !== null) return parsed; } }
+      for (const value of Object.values(row)) { const parsed = parseAmount(value); if (parsed !== null && Math.abs(parsed) > 0.01) return parsed; }
+      return null;
+    }
+    function parseAmount(value){
+      if (typeof value === 'number') return value;
+      if (typeof value !== 'string') return null;
+      const cleaned = value.replace(/[\\$,\\s]/g, '').trim();
+      const isNegative = /\\((.*)\\)/.test(cleaned);
+      const numStr = cleaned.replace(/[()]/g, '');
+      const num = parseFloat(numStr);
+      if (isNaN(num)) return null;
+      return isNegative ? -Math.abs(num) : num;
+    }
+    function sumCategory(category){ return Object.values(financialData[category] || {}).reduce((s,v)=> s + (v||0), 0); }
+    function calculateTotals(){
+      const totalRevenue = sumCategory('revenue') + sumCategory('otherIncome');
+      const totalCOGS = sumCategory('costOfGoodsSold');
+      const totalOpEx = sumCategory('operatingExpenses') + sumCategory('otherExpenses');
+      const totalExpenses = totalCOGS + totalOpEx;
+      const totalCurrentAssets = sumCategory('currentAssets');
+      const totalFixedAssets = sumCategory('fixedAssets');
+      const totalAssets = totalCurrentAssets + totalFixedAssets + sumCategory('otherAssets');
+      const totalCurrentLiabilities = sumCategory('currentLiabilities');
+      const totalLongTermLiabilities = sumCategory('longTermLiabilities');
+      const totalLiabilities = totalCurrentLiabilities + totalLongTermLiabilities;
+      const totalEquity = sumCategory('equity');
+      financialData.totals = {
+        totalRevenue, totalCOGS, grossProfit: totalRevenue - totalCOGS,
+        totalOperatingExpenses: totalOpEx, totalExpenses,
+        netIncome: totalRevenue - totalExpenses,
+        totalCurrentAssets, totalFixedAssets, totalAssets,
+        totalCurrentLiabilities, totalLongTermLiabilities, totalLiabilities, totalEquity,
+        workingCapital: totalCurrentAssets - totalCurrentLiabilities,
+        revenueAccountCount: Object.keys(financialData.revenue).length,
+        expenseAccountCount: Object.keys(financialData.operatingExpenses).length + Object.keys(financialData.costOfGoodsSold).length,
+        assetAccountCount: Object.keys(financialData.currentAssets).length + Object.keys(financialData.fixedAssets).length,
+        chartCount: chartImages.length
+      };
+    }
+
+    // ---------- UI: Preview & PDF ----------
+    function generateReport(){
+      const companyName = document.getElementById('companyName').value.trim();
+      const reportPeriod = document.getElementById('reportPeriod').value.trim();
+      if (!companyName || !reportPeriod) { alert('Please fill in company name and report period.'); return; }
+      document.getElementById('processing').style.display = 'block';
+      document.getElementById('generateBtn').disabled = true;
+      setTimeout(processReports, 400);
+    }
+    function processReports(){
+      document.getElementById('processing').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('reportPreview').style.display = 'block';
+      const companyName = document.getElementById('companyName').value;
+      const reportPeriod = document.getElementById('reportPeriod').value;
+      generatePreview(companyName, reportPeriod);
+      document.getElementById('downloadPdf').onclick = e => {
+        e.preventDefault();
+        const fileName = \`\${companyName.replace(/\\s+/g, '_')}_\${reportPeriod.replace(/\\s+/g, '_')}_Financial_Report\`;
+        generatePDF(companyName, reportPeriod, fileName);
+      };
+    }
+    function generatePreview(companyName, reportPeriod){
+      const el = document.getElementById('previewContent');
+      const t = financialData.totals;
+      const logo = logoDataURL
+        ? \`<img src="\${logoDataURL}" style="max-width:150px;max-height:80px;margin-bottom:20px;border-radius:8px;"/>\`
+        : '<div style="background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;padding:15px 25px;border-radius:8px;display:inline-block;margin-bottom:20px;font-weight:bold;">ARISE TAX</div>';
+      const recos = (document.getElementById('customRecommendations').value || '')
+        .split(/\\n+/).map(s=>s.trim()).filter(Boolean);
+      const recosHtml = recos.length ? ('<ul>' + recos.map(r=>'<li>'+escapeHtml(r)+'</li>').join('') + '</ul>') : '<p class="muted">No custom recommendations added.</p>';
+      
+      el.innerHTML = \`
+        <div style="text-align:center;margin-bottom:40px;padding:40px;background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;border-radius:15px;">
+          \${logo}
+          <h1 style="margin:15px 0;">Financial Report Package</h1>
+          <h2 style="margin:10px 0;">\${companyName}</h2>
+          <h3 style="margin:10px 0;">\${reportPeriod}</h3>
+          <p style="opacity:0.9;">Prepared by \${document.getElementById('preparedBy').value} — \${document.getElementById('reportDate').value}</p>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi"><h5>Total Revenue</h5><div class="val">\${formatCurrency(t.totalRevenue||0)}</div><div class="meta">\${t.revenueAccountCount} streams</div></div>
+          <div class="kpi"><h5>Gross Profit</h5><div class="val">\${formatCurrency((t.grossProfit)||0)}</div><div class="meta">\${pct(t.grossProfit, t.totalRevenue)} margin</div></div>
+          <div class="kpi"><h5>Net Income</h5><div class="val">\${formatCurrency(t.netIncome||0)}</div><div class="meta">\${pct(t.netIncome, t.totalRevenue)} of revenue</div></div>
+          <div class="kpi"><h5>Working Capital</h5><div class="val">\${formatCurrency(t.workingCapital||0)}</div><div class="meta">CA - CL</div></div>
+        </div>
+        <div class="mt-24">
+          <h3 style="margin:0 0 12px 0;color:#111827">Recommendations</h3>
+          \${recosHtml}
+        </div>
+      \`;
+    }
+    function pct(n,d){ if(!d) return '—'; return (100 * (n||0)/d).toFixed(1)+'%'; }
+    function formatCurrency(v){ const n = Number(v||0); return n.toLocaleString(undefined, {style:'currency', currency:'USD'}); }
+    function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function colorFromInput(id, fallback){ const el = document.getElementById(id); return (el && el.value) ? el.value : fallback; }
+
+    // ---------- PDF ----------
+    async function generatePDF(companyName, reportPeriod, fileName){
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({unit:'mm', format:'a4', orientation: 'portrait'});
+      const accent = colorFromInput('pdfAccent', '#1e3a8a');
+      const textColor = colorFromInput('pdfTextColor', '#1f2937');
+      const t = financialData.totals;
+
+      const brand = hexToRgb(accent);
+      const txt = hexToRgb(textColor);
+
+      // Cover
+      doc.setFillColor(brand.r, brand.g, brand.b);
+      doc.rect(0,0,210,60,'F');
+      if (logoDataURL) {
+        try { doc.addImage(logoDataURL, 'PNG', 20, 18, 40, 20); } catch {}
+      }
+      doc.setTextColor(255,255,255);
+      doc.setFont('helvetica','bold'); doc.setFontSize(18);
+      doc.text('Financial Report Package', 70, 25);
+      doc.setFontSize(14); doc.text(companyName, 70, 35);
+      doc.setFontSize(12); doc.text(reportPeriod, 70, 43);
+      doc.setFontSize(10); doc.text('Prepared by ' + (document.getElementById('preparedBy').value || 'Arise Tax Services'), 70, 51);
+      doc.setTextColor(txt.r, txt.g, txt.b);
+
+      // KPIs
+      const y0 = 75;
+      const cards = [
+        ['Total Revenue', formatCurrency(t.totalRevenue||0)],
+        ['Gross Profit', formatCurrency(t.grossProfit||0)],
+        ['Net Income', formatCurrency(t.netIncome||0)],
+        ['Working Capital', formatCurrency(t.workingCapital||0)],
+      ];
+      const cardW = 90, cardH = 22, gap = 10;
+      let x = 15, y = y0;
+      doc.setDrawColor(230);
+      cards.forEach((c,i)=>{
+        doc.setFillColor(248,250,252); // surface-2
+        doc.roundedRect(x, y, cardW, cardH, 3, 3, 'FD');
+        doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.text(c[0], x+6, y+8);
+        doc.setFont('helvetica','bold'); doc.setFontSize(14); doc.setTextColor(brand.r, brand.g, brand.b); doc.text(c[1], x+6, y+16);
+        doc.setTextColor(txt.r, txt.g, txt.b);
+        x += cardW + gap;
+        if (x + cardW > 195){ x = 15; y += cardH + gap; }
+      });
+
+      // Recommendations
+      const recos = (document.getElementById('customRecommendations').value || '').split(/\\n+/).map(s=>s.trim()).filter(Boolean);
+      if (recos.length){
+        doc.setFont('helvetica','bold'); doc.setFontSize(13);
+        doc.text('Recommendations', 15, y + 18);
+        doc.setFont('helvetica','normal'); doc.setFontSize(11);
+        let yy = y + 26;
+        recos.forEach(r => {
+          const lines = doc.splitTextToSize('• ' + r, 180);
+          doc.text(lines, 20, yy);
+          yy += 6 + 4*(Math.max(lines.length-1,0));
+          if (yy > 280){ doc.addPage(); yy = 20; }
+        });
+      }
+
+      // Charts (thumbnails)
+      let cy = 200;
+      if (chartImages.length){
+        doc.setFont('helvetica','bold'); doc.setFontSize(13);
+        doc.text('Charts & Visuals', 15, cy - 6);
+        let cx = 15;
+        const thumbW = 80, thumbH = 45, cgap = 10;
+        chartImages.slice(0, 4).forEach(ch => {
+          try { doc.addImage(ch.dataURL, 'PNG', cx, cy, thumbW, thumbH); } catch {}
+          cx += thumbW + cgap;
+          if (cx + thumbW > 195){ cx = 15; cy += thumbH + cgap; }
+        });
+      }
+
+      // Footer
+      doc.setFontSize(9);
+      doc.text('Generated by Arise QBO Report Package Generator', 15, 290);
+
+      doc.save(fileName + '.pdf');
+    }
+
+    // ---------- Helpers ----------
+    function hexToRgb(hex){
+      const c = hex.replace('#','');
+      const bigint = parseInt(c, 16);
+      const r = (bigint >> 16) & 255;
+      const g = (bigint >> 8) & 255;
+      const b = bigint & 255;
+      return {r,g,b};
+    }
+    function logDiag(msg){
+      const d = document.getElementById('diagnostics');
+      if (d) d.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    }
+  </script>
+</body>
+</html>
