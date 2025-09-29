@@ -1,0 +1,1898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Arise Tax — Report Package Generator</title>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #4a4fb5 0%, #3e3b8c 25%, #2c3e50 100%);
+      min-height: 100vh;
+      padding: 30px;
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 24px;
+      box-shadow: 0 25px 50px rgba(0,0,0,.15);
+      overflow: hidden;
+      backdrop-filter: blur(10px);
+    }
+    .header {
+      background: linear-gradient(135deg, #4a4fb5 0%, #3e3b8c 50%, #2c3e50 100%);
+      color: #fff;
+      padding: 60px 50px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .arise-logo {
+      width: 200px;
+      height: 130px;
+      margin: 0 auto 30px;
+      background: rgba(255,255,255,0.95);
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8em;
+      font-weight: 800;
+      color: #4a4fb5;
+      letter-spacing: 4px;
+      box-shadow: 0 15px 35px rgba(0,0,0,.2);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.3);
+    }
+    .header h1 {
+      margin: 0 0 20px 0;
+      font-size: 2.6em;
+      font-weight: 700;
+      text-shadow: 0 2px 10px rgba(0,0,0,.2);
+      letter-spacing: -0.5px;
+    }
+    .header p {
+      font-size: 1.2em;
+      opacity: 0.95;
+      font-weight: 400;
+      letter-spacing: 0.5px;
+    }
+    .main-content {
+      padding: 60px 50px;
+      background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);
+    }
+    .instructions {
+      background: linear-gradient(135deg, rgba(74,79,181,0.08) 0%, rgba(74,79,181,0.03) 100%);
+      border-left: 6px solid #4a4fb5;
+      padding: 40px;
+      margin: 40px 0;
+      border-radius: 0 20px 20px 0;
+      box-shadow: 0 8px 25px rgba(74,79,181,.08);
+      backdrop-filter: blur(5px);
+    }
+    .instructions h3 {
+      color: #4a4fb5;
+      margin-bottom: 20px;
+      font-size: 1.4em;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+    .instructions h4 {
+      color: #2c3e50;
+      margin-bottom: 12px;
+      font-weight: 600;
+    }
+    .instructions ul {
+      margin-left: 25px;
+      margin-top: 15px;
+    }
+    .instructions li {
+      margin-bottom: 10px;
+      color: #4a5568;
+      font-weight: 400;
+    }
+    .upload-section {
+      background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+      border: 3px dashed #cbd5e0;
+      border-radius: 24px;
+      padding: 60px;
+      text-align: center;
+      margin: 50px 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(45deg, rgba(74,79,181,0.02) 0%, transparent 50%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+    .upload-section.dragover {
+      border-color: #4a4fb5;
+      background: linear-gradient(135deg, rgba(74,79,181,0.1) 0%, rgba(74,79,181,0.05) 100%);
+      transform: translateY(-4px);
+      box-shadow: 0 15px 40px rgba(74,79,181,.2);
+    }
+    .upload-section.dragover::before {
+      opacity: 1;
+    }
+    .upload-btn {
+      background: linear-gradient(135deg, #4a4fb5 0%, #3e3b8c 50%, #2c3e50 100%);
+      color: #fff;
+      border: none;
+      padding: 22px 40px;
+      border-radius: 50px;
+      font-size: 1.2em;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 8px 25px rgba(74,79,181,.3);
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+    .upload-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.6s;
+    }
+    .upload-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 35px rgba(74,79,181,.4);
+    }
+    .upload-btn:hover::before {
+      left: 100%;
+    }
+    .file-item {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 1px solid rgba(226,232,240,0.8);
+      border-radius: 20px;
+      padding: 25px;
+      margin: 20px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 15px rgba(0,0,0,.06);
+      backdrop-filter: blur(5px);
+    }
+    .file-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,.12);
+      border-color: rgba(74,79,181,0.3);
+    }
+    .file-badge {
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      font-weight: 700;
+      margin-left: 15px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    }
+    .badge-pl { 
+      background: linear-gradient(135deg, #dcfce7, #bbf7d0); 
+      color: #15803d; 
+      border: 1px solid rgba(34,197,94,0.2);
+    }
+    .badge-bs { 
+      background: linear-gradient(135deg, #dbeafe, #bfdbfe); 
+      color: #1d4ed8; 
+      border: 1px solid rgba(59,130,246,0.2);
+    }
+    .badge-ar { 
+      background: linear-gradient(135deg, #fef3c7, #fde68a); 
+      color: #92400e; 
+      border: 1px solid rgba(245,158,11,0.2);
+    }
+    .badge-ap { 
+      background: linear-gradient(135deg, #fecaca, #fca5a5); 
+      color: #991b1b; 
+      border: 1px solid rgba(239,68,68,0.2);
+    }
+    .badge-chart { 
+      background: linear-gradient(135deg, #d1fae5, #a7f3d0); 
+      color: #047857; 
+      border: 1px solid rgba(16,185,129,0.2);
+    }
+    .company-info {
+      background: linear-gradient(135deg, rgba(74,79,181,0.05) 0%, rgba(248,250,252,0.8) 100%);
+      border: 2px solid rgba(74,79,181,0.15);
+      border-radius: 24px;
+      padding: 45px;
+      margin: 50px 0;
+      box-shadow: 0 8px 25px rgba(74,79,181,.08);
+      backdrop-filter: blur(10px);
+    }
+    .company-info h3 {
+      color: #4a4fb5;
+      margin-bottom: 30px;
+      font-size: 1.5em;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .form-row {
+      display: flex;
+      gap: 30px;
+      margin-bottom: 25px;
+    }
+    .form-group {
+      flex: 1;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+      color: #2d3748;
+      font-size: 0.95em;
+      letter-spacing: 0.3px;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 15px 18px;
+      border: 2px solid rgba(226,232,240,0.8);
+      border-radius: 12px;
+      font-size: 1em;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      box-shadow: inset 0 2px 4px rgba(0,0,0,.02);
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #4a4fb5;
+      box-shadow: 0 0 0 4px rgba(74,79,181,.1), inset 0 2px 4px rgba(0,0,0,.02);
+      background: #ffffff;
+    }
+    .generate-btn {
+      background: linear-gradient(135deg, #4a4fb5 0%, #3e3b8c 50%, #2c3e50 100%);
+      color: #fff;
+      border: none;
+      padding: 28px 60px;
+      border-radius: 50px;
+      font-size: 1.4em;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      margin: 40px 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 10px 30px rgba(74,79,181,.3);
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+    .generate-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.8s;
+    }
+    .generate-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(74,79,181,.4);
+    }
+    .generate-btn:hover:not(:disabled)::before {
+      left: 100%;
+    }
+    .generate-btn:disabled {
+      background: linear-gradient(135deg, #94a3b8, #64748b);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: 0 4px 15px rgba(148,163,184,.2);
+    }
+    .processing {
+      display: none;
+      text-align: center;
+      padding: 80px;
+      background: linear-gradient(135deg, rgba(74,79,181,0.02) 0%, rgba(248,250,252,0.5) 100%);
+      border-radius: 20px;
+      margin: 30px 0;
+    }
+    .processing h3 {
+      margin-top: 30px;
+      color: #4a4fb5;
+      font-size: 1.4em;
+      font-weight: 600;
+      letter-spacing: -0.3px;
+    }
+    .processing p {
+      margin-top: 12px;
+      color: #64748b;
+      font-size: 1.05em;
+    }
+    .results {
+      display: none;
+      background: linear-gradient(135deg, rgba(34,197,94,0.08) 0%, rgba(240,253,244,0.8) 100%);
+      border: 2px solid rgba(34,197,94,0.2);
+      border-radius: 24px;
+      padding: 40px;
+      margin: 40px 0;
+      box-shadow: 0 8px 25px rgba(34,197,94,.1);
+      backdrop-filter: blur(10px);
+    }
+    .results h3 {
+      color: #15803d;
+      margin-bottom: 25px;
+      font-size: 1.5em;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    .results p {
+      color: #374151;
+      margin-bottom: 25px;
+      font-size: 1.05em;
+      line-height: 1.6;
+    }
+    .download-btn {
+      background: linear-gradient(135deg, #4a4fb5 0%, #3e3b8c 100%);
+      color: #fff;
+      text-decoration: none;
+      padding: 18px 35px;
+      border-radius: 50px;
+      margin: 10px;
+      display: inline-block;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 6px 20px rgba(74,79,181,.25);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      position: relative;
+      overflow: hidden;
+    }
+    .download-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.6s;
+    }
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(74,79,181,.35);
+    }
+    .download-btn:hover::before {
+      left: 100%;
+    }
+    .report-preview {
+      background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+      border: 2px solid rgba(226,232,240,0.6);
+      border-radius: 24px;
+      margin-top: 40px;
+      max-height: 600px;
+      overflow-y: auto;
+      box-shadow: 0 8px 25px rgba(0,0,0,.08);
+      backdrop-filter: blur(10px);
+    }
+    .preview-header {
+      background: linear-gradient(135deg, #4a4fb5 0%, #3e3b8c 100%);
+      padding: 25px 30px;
+      font-weight: 700;
+      color: #ffffff;
+      font-size: 1.3em;
+      letter-spacing: 0.5px;
+      border-radius: 22px 22px 0 0;
+      box-shadow: 0 2px 10px rgba(74,79,181,.2);
+    }
+    .preview-content {
+      padding: 40px;
+      background: linear-gradient(to bottom, #ffffff 0%, #f8fafc 100%);
+      border-radius: 0 0 22px 22px;
+    }
+    .spinner {
+      border: 4px solid rgba(226,232,240,0.3);
+      border-top: 4px solid #4a4fb5;
+      border-radius: 50%;
+      width: 70px;
+      height: 70px;
+      animation: spin 1.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+      margin: 0 auto 30px;
+      box-shadow: 0 4px 15px rgba(74,79,181,.2);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="arise-logo">ARISE</div>
+      <h1>Enhanced QBO Report Package Generator</h1>
+      <p>Professional financial reporting with advanced account categorization and visual analytics</p>
+    </div>
+
+    <div class="main-content">
+      <div class="instructions">
+        <h3>Enhanced Features & Capabilities</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-top: 20px;">
+          <div>
+            <h4 style="color: #4a4fb5; margin-bottom: 10px;">Smart Account Detection</h4>
+            <ul>
+              <li>Automatic P&L vs Balance Sheet categorization</li>
+              <li>Advanced account type recognition</li>
+              <li>Revenue, expense, asset, liability classification</li>
+              <li>COGS and operating expense separation</li>
+            </ul>
+          </div>
+          <div>
+            <h4 style="color: #4a4fb5; margin-bottom: 10px;">Visual Integration</h4>
+            <ul>
+              <li>QB dashboard charts (PNG/JPG/PDF)</li>
+              <li>Enhanced formatting and spacing</li>
+              <li>Professional visual presentations</li>
+              <li>Custom chart categorization</li>
+            </ul>
+          </div>
+        </div>
+        
+        <h4 style="color: #4a4fb5; margin: 25px 0 15px 0;">Supported File Types</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+          <div style="padding: 15px; background: rgba(74,79,181,0.1); border-radius: 10px;">
+            <strong>Financial Reports</strong><br>
+            P&L, Balance Sheet, Trial Balance (Excel/CSV)
+          </div>
+          <div style="padding: 15px; background: rgba(34,197,94,0.1); border-radius: 10px;">
+            <strong>Aging Reports</strong><br>
+            A/R Aging, A/P Aging (Excel/CSV)
+          </div>
+          <div style="padding: 15px; background: rgba(245,158,11,0.1); border-radius: 10px;">
+            <strong>Visual Charts</strong><br>
+            QB Dashboard exports (PNG/JPG/PDF)
+          </div>
+        </div>
+      </div>
+
+      <div class="upload-section" id="uploadSection">
+        <div style="font-size: 4em; color: #6c757d; margin-bottom: 25px;">📊</div>
+        <div style="font-size: 1.3em; color: #495057; margin-bottom: 25px; font-weight: 500;">
+          Drag and drop your QBO files and dashboard charts here
+        </div>
+        <input type="file" id="fileInput" style="display:none" multiple accept=".xlsx,.xls,.csv,.png,.jpg,.jpeg,.pdf"/>
+        <button class="upload-btn" onclick="document.getElementById('fileInput').click()">
+          Choose Files to Upload
+        </button>
+        <div id="fileList" style="margin-top: 30px;"></div>
+      </div>
+
+     <div class="company-info">
+        <h3>Company Information</h3>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Company Name</label>
+            <input type="text" id="companyName" placeholder="Enter client company name"/>
+          </div>
+          <div class="form-group">
+            <label>Report Period</label>
+            <input type="text" id="reportPeriod" placeholder="e.g., Q1 2025, January 2025"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Prepared By</label>
+            <input type="text" id="preparedBy" value="Arise Tax Services"/>
+          </div>
+          <div class="form-group">
+            <label>Date Prepared</label>
+            <input type="date" id="reportDate"/>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Upload Company Logo (Optional)</label>
+            <input type="file" id="logoUpload" accept="image/*"/>
+          </div>
+          <div class="form-group">
+            <label>Report Notes (Optional)</label>
+            <input type="text" id="reportNotes" placeholder="Any special notes or focus areas"/>
+          </div>
+        </div>
+
+      <div class="form-row">
+          <div class="form-group" style="flex: 2;">
+            <label>Custom Recommendations (Optional)</label>
+            <textarea id="customRecommendations" 
+                      placeholder="Enter your professional recommendations and insights for this client..."
+                      style="width:100%; height:120px; padding:15px 18px; border:2px solid rgba(226,232,240,0.8); border-radius:12px; font-family:inherit; font-size:1em; resize:vertical; background:linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">
+            </textarea>
+          </div>
+        </div>
+      </div>
+
+      <button class="generate-btn" id="generateBtn" onclick="generateReport()" disabled>
+        Generate Enhanced Report Package
+      </button>
+
+      <div class="processing" id="processing">
+        <div class="spinner"></div>
+        <h3>Processing your enhanced financial reports...</h3>
+        <p style="margin-top: 15px; color: #666;">Analyzing accounts, categorizing data, and generating professional reports</p>
+      </div>
+
+      <div class="results" id="results">
+        <h3>Enhanced Report Package Generated Successfully!</h3>
+        <p style="margin-bottom: 20px;">Your professional financial report package is ready for download with enhanced categorization and visual analytics.</p>
+        <div>
+           <a href="#" class="download-btn" id="downloadPdf">Download Enhanced PDF Report</a>
+        </div>
+      </div>
+
+      <div class="report-preview" id="reportPreview" style="display:none;">
+        <div class="preview-header">Enhanced Report Preview</div>
+        <div class="preview-content" id="previewContent"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Libraries -->
+  <script src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+  <script>
+    // Enhanced state management
+    let uploadedFiles = [];
+    let parsedData = {};
+    let logoDataURL = null;
+    let chartImages = [];
+    
+    // Enhanced financial data structure with proper categorization
+    let financialData = {
+      // P&L Accounts
+      revenue: {},
+      costOfGoodsSold: {},
+      operatingExpenses: {},
+      otherIncome: {},
+      otherExpenses: {},
+      
+      // Balance Sheet Accounts
+      currentAssets: {},
+      fixedAssets: {},
+      otherAssets: {},
+      currentLiabilities: {},
+      longTermLiabilities: {},
+      equity: {},
+      
+      // Calculated totals
+      totals: {},
+      
+      // Optional reports
+      balanceSheet: null,
+      arAging: null,
+      apAging: null,
+      
+      // Charts and visualizations
+      charts: []
+    };
+
+    // Enhanced account classification patterns
+    const accountClassification = {
+      revenue: [
+        /^4\d{3}/i,
+        /revenue/i, /sales/i, /income(?!.*tax)/i, /service.*income/i,
+        /consulting.*income/i, /professional.*fees.*income/i,
+        /excavation.*income/i, /contract.*income/i
+      ],
+      
+      costOfGoodsSold: [
+        /^5[01]\d{2}/i,
+        /cost.*goods.*sold/i, /cogs/i, /materials/i, /direct.*cost/i,
+        /cost.*sales/i, /cost.*services/i, /direct.*labor/i,
+        /subcontractor/i, /job.*materials/i
+      ],
+      
+      operatingExpenses: [
+        /^5[2-9]\d{2}/i, /^6\d{3}/i,
+        /expense/i, /wages/i, /salary/i, /rent/i, /insurance/i,
+        /utilities/i, /office/i, /travel/i, /meals/i, /phone/i,
+        /advertising/i, /marketing/i, /professional.*fees/i,
+        /supplies/i, /repairs/i, /maintenance/i, /depreciation/i,
+        /payroll.*tax/i, /employment.*tax/i
+      ],
+      
+      currentAssets: [
+        /^1[01]\d{2}/i,
+        /cash/i, /checking/i, /savings/i, /petty.*cash/i,
+        /accounts.*receivable/i, /a\/r/i, /receivable/i,
+        /inventory/i, /prepaid/i, /undeposited/i,
+        /short.*term.*investment/i
+      ],
+      
+      fixedAssets: [
+        /^1[2-9]\d{2}/i,
+        /equipment/i, /furniture/i, /building/i, /land/i,
+        /vehicle/i, /computer/i, /machinery/i, /tools/i,
+        /accumulated.*depreciation/i, /depreciation/i,
+        /fixed.*asset/i, /property/i
+      ],
+      
+      currentLiabilities: [
+        /^2[01]\d{2}/i,
+        /accounts.*payable/i, /a\/p/i, /payable/i,
+        /accrued/i, /payroll.*liabilit/i, /employment.*tax/i,
+        /sales.*tax/i, /use.*tax/i, /short.*term.*debt/i,
+        /credit.*card/i, /line.*credit/i
+      ],
+      
+      longTermLiabilities: [
+        /^2[2-9]\d{2}/i,
+        /long.*term.*debt/i, /mortgage/i, /loan/i,
+        /note.*payable/i, /bond/i, /lease.*liability/i,
+        /equipment.*loan/i, /vehicle.*loan/i
+      ],
+      
+      equity: [
+        /^3\d{3}/i,
+        /equity/i, /capital/i, /retained.*earnings/i,
+        /owner.*equity/i, /partner.*capital/i,
+        /common.*stock/i, /preferred.*stock/i,
+        /drawing/i, /distribution/i
+      ]
+    };
+
+    // Initialize the application
+    document.addEventListener('DOMContentLoaded', function () {
+      const today = new Date();
+      const formatted = today.getFullYear() + '-' +
+        String(today.getMonth()+1).padStart(2,'0') + '-' +
+        String(today.getDate()).padStart(2,'0');
+      document.getElementById('reportDate').value = formatted;
+      
+      setupFileUpload();
+      setupLogoUpload();
+    });
+
+     // File upload handling
+    function setupFileUpload() {
+      const upload = document.getElementById('uploadSection');
+      const input = document.getElementById('fileInput');
+
+      upload.addEventListener('dragover', e => {
+        e.preventDefault();
+        upload.classList.add('dragover');
+      });
+
+      upload.addEventListener('dragleave', () => {
+        upload.classList.remove('dragover');
+      });
+
+      upload.addEventListener('drop', e => {
+        e.preventDefault();
+        upload.classList.remove('dragover');
+        handleFiles(e.dataTransfer.files);
+      });
+
+      input.addEventListener('change', e => {
+        handleFiles(e.target.files);
+      });
+    }
+
+    function setupLogoUpload() {
+      document.getElementById('logoUpload').addEventListener('change', e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const reader = new FileReader();
+        reader.onload = ev => {
+          logoDataURL = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function handleFiles(files) {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        
+        if (isValidFileType(file)) {
+          uploadedFiles.push(file);
+          displayFile(file);
+          
+          if (isImageFile(file) || isPDFFile(file)) {
+            processChartFile(file);
+          } else {
+            parseFinancialFile(file);
+          }
+        } else {
+          alert(`${file.name} is not supported. Please upload Excel, CSV, PNG, JPG, or PDF files.`);
+        }
+      }
+      
+      updateGenerateButton();
+    }
+
+    function isValidFileType(file) {
+      const validTypes = [
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        'application/vnd.ms-excel',
+        'text/csv',
+        'application/pdf',
+        'image/png',
+        'image/jpeg',
+        'image/jpg'
+      ];
+      
+      const validExt = /\.(xlsx|xls|csv|png|jpg|jpeg|pdf)$/i;
+      return validTypes.includes(file.type) || validExt.test(file.name);
+    }
+
+    function isImageFile(file) {
+      return (file.type && file.type.startsWith('image/')) || /\.(png|jpg|jpeg)$/i.test(file.name || '');
+    }
+
+    function isPDFFile(file) {
+      return (file.type && file.type === 'application/pdf') || /\.pdf$/i.test(file.name || '');
+    }
+
+    function processChartFile(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        const chartData = {
+          name: file.name,
+          dataURL: e.target.result,
+          type: detectChartType(file.name),
+          category: detectChartCategory(file.name)
+        };
+        
+        chartImages.push(chartData);
+        financialData.charts.push(chartData);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function detectChartType(filename) {
+      const name = filename.toLowerCase();
+      if (name.includes('revenue') || name.includes('sales') || name.includes('income')) return 'revenue';
+      if (name.includes('expense') || name.includes('cost')) return 'expense';
+      if (name.includes('cash') || name.includes('flow')) return 'cashflow';
+      if (name.includes('balance') || name.includes('assets') || name.includes('liabilities')) return 'balance';
+      if (name.includes('profit') || name.includes('p&l') || name.includes('pl')) return 'profitloss';
+      return 'general';
+    }
+
+    function detectChartCategory(filename) {
+      const name = filename.toLowerCase();
+      if (name.includes('dashboard')) return 'Dashboard';
+      if (name.includes('trend')) return 'Trend Analysis';
+      if (name.includes('comparison')) return 'Comparison';
+      return 'Financial Chart';
+    }
+
+    function displayFile(file) {
+      const list = document.getElementById('fileList');
+      const el = document.createElement('div');
+      el.className = 'file-item';
+      el.dataset.filename = file.name;
+      
+      let icon, badge;
+      
+      if (isImageFile(file) || isPDFFile(file)) {
+        icon = '📊';
+        badge = '<span class="file-badge badge-chart">CHART</span>';
+      } else {
+        icon = file.name.toLowerCase().endsWith('.csv') ? '📄' : '📊';
+        badge = getFileTypeBadge(file.name);
+      }
+      
+      const fileSize = (file.size / 1024).toFixed(1);
+      const fileInfo = `<div><strong>${file.name}</strong><br/><small>${fileSize} KB • ${getFileTypeDescription(file.name)}</small></div>`;
+      
+      el.innerHTML = `
+        <div style="display: flex; align-items: center;">
+          <span style="font-size: 1.8em; margin-right: 15px;">${icon}</span>
+          ${fileInfo}
+          ${badge}
+        </div>
+        <button class="remove-file-btn" data-filename="${file.name}" 
+                style="background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; border: none; padding: 8px 15px; border-radius: 8px; cursor: pointer; transition: all 0.3s ease; font-weight: 600;"
+                onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 15px rgba(220,38,38,0.4)'" 
+                onmouseout="this.style.transform=''; this.style.boxShadow=''">
+          Remove
+        </button>
+      `;
+
+        // Add event listener for the remove button
+      const removeBtn = el.querySelector('.remove-file-btn');
+      removeBtn.addEventListener('click', function() {
+        const filename = this.getAttribute('data-filename');
+        removeFile(filename);
+      });
+
+      list.appendChild(el);
+    }
+
+    function getFileTypeBadge(filename) {
+      const name = filename.toLowerCase();
+      
+      if (name.includes('p&l') || name.includes('profit') || name.includes('income') || 
+          name.includes('p l') || name.includes('pl')) {
+        return '<span class="file-badge badge-pl">P&L REPORT</span>';
+      }
+      if (name.includes('balance') && name.includes('sheet')) {
+        return '<span class="file-badge badge-bs">BALANCE SHEET</span>';
+      }
+      if (name.includes('a/r') || name.includes('receivable') || name.includes('ar ')) {
+        return '<span class="file-badge badge-ar">A/R AGING</span>';
+      }
+      if (name.includes('a/p') || name.includes('payable') || name.includes('ap ')) {
+        return '<span class="file-badge badge-ap">A/P AGING</span>';
+      }
+      if (name.includes('trial') && name.includes('balance')) {
+        return '<span class="file-badge badge-bs">TRIAL BALANCE</span>';
+      }
+      
+      return '<span class="file-badge badge-pl">FINANCIAL DATA</span>';
+    }
+
+    function getFileTypeDescription(filename) {
+      const name = (filename || '').toLowerCase();
+      
+      if (isImageFile({name: filename, type: ''}) || isPDFFile({name: filename, type: ''})) return 'Dashboard Chart';
+      if (name.includes('p&l') || name.includes('profit')) return 'Profit & Loss Report';
+      if (name.includes('balance') && name.includes('sheet')) return 'Balance Sheet Report';
+      if (name.includes('a/r') || name.includes('receivable')) return 'Accounts Receivable Aging';
+      if (name.includes('a/p') || name.includes('payable')) return 'Accounts Payable Aging';
+      if (name.includes('trial')) return 'Trial Balance Report';
+      
+      return 'Financial Report';
+    }
+
+    function removeFile(name) {
+      uploadedFiles = uploadedFiles.filter(f => f.name !== name);
+      delete parsedData[name];
+      chartImages = chartImages.filter(c => c.name !== name);
+      financialData.charts = financialData.charts.filter(c => c.name !== name);
+      
+      const fileItems = document.querySelectorAll('.file-item');
+      fileItems.forEach(item => {
+        if (item.dataset.filename === name) {
+          item.remove();
+        }
+      });
+      
+      updateGenerateButton();
+    }
+
+    function updateGenerateButton() {
+      const btn = document.getElementById('generateBtn');
+      btn.disabled = uploadedFiles.length === 0;
+      
+      if (uploadedFiles.length === 0) {
+        btn.textContent = 'Generate Enhanced Report Package';
+      } else {
+        btn.textContent = `Generate Enhanced Report Package (${uploadedFiles.length} files)`;
+      }
+    }
+
+    // Enhanced file parsing
+    function parseFinancialFile(file) {
+      try {
+        if (file.name.toLowerCase().includes('csv') || file.type.includes('csv')) {
+          const reader = new FileReader();
+          reader.onload = e => {
+            parsedData[file.name] = parseCSV(e.target.result);
+            processFinancialData(file.name, parsedData[file.name]);
+          };
+          reader.readAsText(file);
+        } else {
+          const reader = new FileReader();
+          reader.onload = e => {
+            const workbook = XLSX.read(e.target.result, { type: 'array' });
+            parsedData[file.name] = parseExcelWorkbook(workbook);
+            processFinancialData(file.name, parsedData[file.name]);
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      } catch (err) {
+        console.error('Error parsing', file.name, err);
+        alert(`Error parsing ${file.name}: ${err.message}`);
+      }
+    }
+
+    function parseCSV(text) {
+      const lines = text.split(/\r?\n/);
+      const headers = (lines[0] || '').split(',').map(h => h.trim().replace(/"/g, ''));
+      const data = [];
+      
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        const vals = lines[i].split(',').map(v => v.trim().replace(/"/g, ''));
+        const row = {};
+        headers.forEach((h, idx) => row[h] = vals[idx] || '');
+        data.push(row);
+      }
+      
+      return { headers, data, type: 'csv' };
+    }
+
+    function parseExcelWorkbook(workbook) {
+      const result = { sheets: {}, type: 'excel' };
+      
+      workbook.SheetNames.forEach(name => {
+        const ws = workbook.Sheets[name];
+        const arr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        if (!arr.length) return;
+        
+        const headers = arr[0] || [];
+        const data = [];
+        
+        for (let r = 1; r < arr.length; r++) {
+          const rowArr = arr[r];
+          let hasData = false;
+          
+          for (let c = 0; c < rowArr.length; c++) {
+            if (rowArr[c] !== "" && rowArr[c] !== null) {
+              hasData = true;
+              break;
+            }
+          }
+          
+          if (!hasData) continue;
+          
+          const row = {};
+          headers.forEach((h, i) => row[h || ('Column_' + i)] = rowArr[i] || '');
+          data.push(row);
+        }
+        
+        result.sheets[name] = { headers, data };
+      });
+      
+      return result;
+    }
+
+    // Enhanced account categorization
+    function categorizeAccount(accountName) {
+      if (!accountName) return 'operatingExpenses';
+      
+      const name = String(accountName).trim().toLowerCase();
+      if (!name) return 'operatingExpenses';
+      
+      // Check each category pattern
+      for (const [category, patterns] of Object.entries(accountClassification)) {
+        for (const pattern of patterns) {
+          if (pattern.test(name)) {
+            return category;
+          }
+        }
+      }
+      
+      // Fallback categorization based on account numbers
+      if (/^1\d{3}/.test(name)) return 'currentAssets';
+      if (/^2\d{3}/.test(name)) return 'currentLiabilities';
+      if (/^3\d{3}/.test(name)) return 'equity';
+      if (/^4\d{3}/.test(name)) return 'revenue';
+      if (/^5\d{3}/.test(name)) return 'operatingExpenses';
+      if (/^6\d{3}/.test(name)) return 'operatingExpenses';
+      
+      // Default to operating expenses for unmatched items with amounts
+      return 'operatingExpenses';
+    }
+
+    function processFinancialData(fileName, fileData) {
+      try {
+        const data = fileData.type === 'excel'
+          ? (Object.values(fileData.sheets)[0]?.data || [])
+          : (fileData.data || []);
+
+        data.forEach(row => {
+          try {
+            const accountName = getAccountName(row);
+            const amount = getAmount(row);
+            
+            if (accountName && amount !== null && Math.abs(amount) > 0.01) {
+              const category = categorizeAccount(accountName);
+              
+              // Store in appropriate category
+              if (financialData[category]) {
+                financialData[category][accountName] = (financialData[category][accountName] || 0) + amount;
+              }
+            }
+          } catch (rowError) {
+            console.warn('Error processing row:', rowError);
+          }
+        });
+
+        // Process special report types
+        processSpecialReports(fileName, fileData);
+        calculateTotals();
+      } catch (error) {
+        console.error('Error in processFinancialData:', error);
+      }
+    }
+
+    function processSpecialReports(fileName, fileData) {
+      try {
+        // Balance Sheet detection and processing
+        if (!financialData.balanceSheet && isBalanceSheetFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.balanceSheet = processBalanceSheetData(sheet);
+        }
+        
+        // A/R Aging detection and processing
+        if (!financialData.arAging && isARAgingFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.arAging = processAgingData(sheet, 'customer');
+        }
+        
+        // A/P Aging detection and processing
+        if (!financialData.apAging && isAPAgingFile(fileName, fileData)) {
+          const sheet = fileData.type === 'excel' ? Object.values(fileData.sheets)[0] : fileData;
+          financialData.apAging = processAgingData(sheet, 'vendor');
+        }
+      } catch (e) {
+        console.warn('Error processing special reports:', e);
+      }
+    }
+
+    function isBalanceSheetFile(fileName, fileData) {
+      const name = fileName.toLowerCase();
+      if (name.includes('balance') && name.includes('sheet')) return true;
+      
+      const headers = getHeaders(fileData);
+      return headers.some(h => /assets|liabilities|equity/i.test(String(h)));
+    }
+
+    function isARAgingFile(fileName, fileData) {
+      const name = fileName.toLowerCase();
+      if (name.includes('a/r') || name.includes('receivable')) return true;
+      
+      const headers = getHeaders(fileData);
+      return headers.some(h => /customer/i.test(h)) && 
+             headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
+    }
+
+    function isAPAgingFile(fileName, fileData) {
+      const name = fileName.toLowerCase();
+      if (name.includes('a/p') || name.includes('payable')) return true;
+      
+      const headers = getHeaders(fileData);
+      return headers.some(h => /vendor/i.test(h)) && 
+             headers.some(h => /(1-30|31-60|61-90|current|total|over)/i.test(h));
+    }
+
+    function getHeaders(fileData) {
+      return fileData.type === 'excel'
+        ? (Object.values(fileData.sheets)[0]?.headers || [])
+        : (fileData.headers || []);
+    }
+
+    function processBalanceSheetData(sheet) {
+      const headers = sheet.headers || [];
+      const rows = sheet.data || [];
+      
+      const nameIndex = headers.findIndex(h => /name|account|description/i.test(String(h)));
+      const amountIndex = headers.findIndex(h => /amount|total|balance|value/i.test(String(h)));
+      
+      const processedRows = rows.slice(0, 100).map(row => [
+        nameIndex >= 0 ? (row[headers[nameIndex]] || '') : '',
+        amountIndex >= 0 ? (row[headers[amountIndex]] || '') : ''
+      ]).filter(row => row[0] && row[1]);
+      
+      return {
+        columns: ['Account', 'Amount'],
+        rows: processedRows
+      };
+    }
+
+    function processAgingData(sheet, entityType) {
+      const headers = sheet.headers || [];
+      const rows = sheet.data || [];
+      
+      const entityPattern = entityType === 'customer' ? /customer/i : /vendor/i;
+      const relevantHeaders = headers.filter(h => 
+        entityPattern.test(String(h)) || 
+        /(current|1-30|31-60|61-90|over|total)/i.test(String(h))
+      );
+      
+      const processedRows = rows.slice(0, 100).map(row => 
+        relevantHeaders.map(header => row[header] || '')
+      ).filter(row => row.some(cell => cell));
+      
+      return {
+        columns: relevantHeaders,
+        rows: processedRows
+      };
+    }
+
+    function getAccountName(row) {
+      const candidates = ['Name', 'Account', 'Description', 'Account Name', 'Distribution account'];
+      
+      // Try standard field names first
+      for (const field of candidates) {
+        if (row[field] && String(row[field]).trim()) {
+          return String(row[field]).trim();
+        }
+      }
+      
+      // Look for text fields that could be account names
+      for (const [key, value] of Object.entries(row)) {
+        if (typeof value === 'string' && 
+            value.trim() && 
+            !value.match(/^\$?[\d,.\-()]+$/) && 
+            value.length > 2) {
+          return value.trim();
+        }
+      }
+      
+      return null;
+    }
+
+    function getAmount(row) {
+      const candidates = ['Amount', 'Total', 'Balance', 'Value', 'Current', 'Current Period'];
+      
+      // Try standard amount fields first
+      for (const field of candidates) {
+        if (row[field] !== undefined && row[field] !== '') {
+          const parsed = parseAmount(row[field]);
+          if (parsed !== null) return parsed;
+        }
+      }
+      
+      // Look for any numeric fields
+      for (const value of Object.values(row)) {
+        const parsed = parseAmount(value);
+        if (parsed !== null && Math.abs(parsed) > 0.01) {
+          return parsed;
+        }
+      }
+      
+      return null;
+    }
+
+    function parseAmount(value) {
+      if (typeof value === 'number') return value;
+      if (typeof value !== 'string') return null;
+      
+      const cleaned = value.replace(/[\$,\s]/g, '').trim();
+      const isNegative = /\((.*)\)/.test(cleaned);
+      const numStr = cleaned.replace(/[()]/g, '');
+      const num = parseFloat(numStr);
+      
+      if (isNaN(num)) return null;
+      return isNegative ? -Math.abs(num) : num;
+    }
+
+    function calculateTotals() {
+      const totalRevenue = sumCategory('revenue') + sumCategory('otherIncome');
+      const totalCOGS = sumCategory('costOfGoodsSold');
+      const totalOpEx = sumCategory('operatingExpenses') + sumCategory('otherExpenses');
+      const totalExpenses = totalCOGS + totalOpEx;
+      
+      const totalCurrentAssets = sumCategory('currentAssets');
+      const totalFixedAssets = sumCategory('fixedAssets');
+      const totalAssets = totalCurrentAssets + totalFixedAssets + sumCategory('otherAssets');
+      
+      const totalCurrentLiabilities = sumCategory('currentLiabilities');
+      const totalLongTermLiabilities = sumCategory('longTermLiabilities');
+      const totalLiabilities = totalCurrentLiabilities + totalLongTermLiabilities;
+      
+      const totalEquity = sumCategory('equity');
+      
+      financialData.totals = {
+        totalRevenue,
+        totalCOGS,
+        grossProfit: totalRevenue - totalCOGS,
+        totalOperatingExpenses: totalOpEx,
+        totalExpenses,
+        netIncome: totalRevenue - totalExpenses,
+        totalCurrentAssets,
+        totalFixedAssets,
+        totalAssets,
+        totalCurrentLiabilities,
+        totalLongTermLiabilities,
+        totalLiabilities,
+        totalEquity,
+        workingCapital: totalCurrentAssets - totalCurrentLiabilities,
+        revenueAccountCount: Object.keys(financialData.revenue).length,
+        expenseAccountCount: Object.keys(financialData.operatingExpenses).length + Object.keys(financialData.costOfGoodsSold).length,
+        assetAccountCount: Object.keys(financialData.currentAssets).length + Object.keys(financialData.fixedAssets).length,
+        chartCount: chartImages.length
+      };
+    }
+
+    function sumCategory(category) {
+      return Object.values(financialData[category] || {}).reduce((sum, val) => sum + (val || 0), 0);
+    }
+
+    // Report generation
+    function generateReport() {
+      const companyName = document.getElementById('companyName').value.trim();
+      const reportPeriod = document.getElementById('reportPeriod').value.trim();
+      
+      if (!companyName || !reportPeriod) {
+        alert('Please fill in company name and report period.');
+        return;
+      }
+      
+      document.getElementById('processing').style.display = 'none';
+      document.getElementById('generateBtn').disabled = true;
+      
+      // Add slight delay for UX
+      setTimeout(processReports, 600);
+    }
+
+    function processReports() {
+      document.getElementById('processing').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('reportPreview').style.display = 'block';
+
+      const companyName = document.getElementById('companyName').value;
+      const reportPeriod = document.getElementById('reportPeriod').value;
+
+      generatePreview(companyName, reportPeriod);
+      
+       document.getElementById('downloadPdf').onclick = e => {
+        e.preventDefault();
+        const fileName = `${companyName.replace(/\s+/g, '_')}_${reportPeriod.replace(/\s+/g, '_')}_Enhanced_Financial_Report`;
+        generatePDF(companyName, reportPeriod, fileName);
+      };
+    }
+
+     function generatePreview(companyName, reportPeriod){
+      const el = document.getElementById('previewContent');
+      const t = financialData.totals;
+      const logo = logoDataURL
+        ? `<img src="\${logoDataURL}" style="max-width:150px;max-height:80px;margin-bottom:20px;border-radius:8px;"/>`
+        : '<div style="background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;padding:15px 25px;border-radius:8px;display:inline-block;margin-bottom:20px;font-weight:bold;">ARISE TAX</div>';
+      const recos = (document.getElementById('customRecommendations').value || '')
+        .split(/\\n+/).map(s=>s.trim()).filter(Boolean);
+      const recosHtml = recos.length ? ('<ul>' + recos.map(r=>'<li>'+escapeHtml(r)+'</li>').join('') + '</ul>') : '<p class="muted">No custom recommendations added.</p>';
+      
+      el.innerHTML = `
+        <div style="text-align:center;margin-bottom:40px;padding:40px;background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;border-radius:15px;">
+          \${logo}
+          <h1 style="margin:15px 0;">Financial Report Package</h1>
+          <h2 style="margin:10px 0;">\${companyName}</h2>
+          <h3 style="margin:10px 0;">\${reportPeriod}</h3>
+          <p style="opacity:0.9;">Prepared by \${document.getElementById('preparedBy').value} — \${document.getElementById('reportDate').value}</p>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi"><h5>Total Revenue</h5><div class="val">\${formatCurrency(t.totalRevenue||0)}</div><div class="meta">\${t.revenueAccountCount} streams</div></div>
+          <div class="kpi"><h5>Gross Profit</h5><div class="val">\${formatCurrency((t.grossProfit)||0)}</div><div class="meta">\${pct(t.grossProfit, t.totalRevenue)} margin</div></div>
+          <div class="kpi"><h5>Net Income</h5><div class="val">\${formatCurrency(t.netIncome||0)}</div><div class="meta">\${pct(t.netIncome, t.totalRevenue)} of revenue</div></div>
+          <div class="kpi"><h5>Working Capital</h5><div class="val">\${formatCurrency(t.workingCapital||0)}</div><div class="meta">CA - CL</div></div>
+        </div>
+        <div class="mt-24">
+          <h3 style="margin:0 0 12px 0;color:#111827">Recommendations</h3>
+          \${recosHtml}
+        </div>
+      `;
+    }
+
+    function pct(n,d){ if(!d) return '—'; return (100 * (n||0)/d).toFixed(1)+'%'; }
+    function formatCurrency(v){ const n = Number(v||0); return n.toLocaleString(undefined, {style:'currency', currency:'USD'}); }
+    function escapeHtml(s){ return s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+    function colorFromInput(id, fallback){ const el = document.getElementById(id); return (el && el.value) ? el.value : fallback; }
+
+    // Report generation
+    function generateReport() {
+      const companyName = document.getElementById('companyName').value.trim();
+      const reportPeriod = document.getElementById('reportPeriod').value.trim();
+      
+      if (!companyName || !reportPeriod) {
+        alert('Please fill in company name and report period.');
+        return;
+      }
+      
+      document.getElementById('processing').style.display = 'block';
+      document.getElementById('generateBtn').disabled = true;
+      
+      // Add slight delay for UX
+      setTimeout(processReports, 600);
+    }
+
+    function processReports() {
+      document.getElementById('processing').style.display = 'none';
+      document.getElementById('results').style.display = 'block';
+      document.getElementById('reportPreview').style.display = 'block';
+
+      const companyName = document.getElementById('companyName').value;
+      const reportPeriod = document.getElementById('reportPeriod').value;
+
+      generatePreview(companyName, reportPeriod);
+      
+       document.getElementById('downloadPdf').onclick = e => {
+        e.preventDefault();
+        const fileName = `${companyName.replace(/\s+/g, '_')}_${reportPeriod.replace(/\s+/g, '_')}_Enhanced_Financial_Report`;
+        generatePDF(companyName, reportPeriod, fileName);
+      };
+    }
+
+    function generatePreview(companyName, reportPeriod) {
+      const el = document.getElementById('previewContent');
+      const totals = financialData.totals;
+      
+      const logo = logoDataURL
+        ? `<img src="${logoDataURL}" style="max-width:150px;max-height:80px;margin-bottom:20px;border-radius:8px;"/>`
+        : '<div style="background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;padding:15px 25px;border-radius:8px;display:inline-block;margin-bottom:20px;font-weight:bold;">ARISE TAX</div>';
+      
+      const profitabilityStatus = totals.netIncome >= 0 ? 
+        { color: '#22c55e', status: 'Profitable', message: 'Strong financial performance' } :
+        { color: '#ef4444', status: 'Loss', message: 'Review required' };
+
+      el.innerHTML = `
+        <div style="text-align:center;margin-bottom:40px;padding:40px;background:linear-gradient(135deg,#4a4fb5,#3e3b8c);color:#fff;border-radius:15px;">
+          ${logo}
+          <h1 style="margin:15px 0;">Enhanced Financial Report Package</h1>
+          <h2 style="margin:10px 0;">${companyName}</h2>
+          <h3 style="margin:10px 0;">${reportPeriod}</h3>
+           <p style="opacity:0.9;">Prepared by \${document.getElementById('preparedBy').value} — \${document.getElementById('reportDate').value}</p>
+        </div>
+        
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:25px;margin:40px 0;">
+          <div style="background:linear-gradient(135deg,#22c55e,#16a34a);color:white;padding:25px;border-radius:15px;text-align:center;box-shadow:0 4px 15px rgba(34,197,94,0.3);">
+            <h4 style="margin:0 0 10px 0;opacity:0.9;">Total Revenue</h4>
+            <h2 style="margin:0 0 8px 0;">${formatCurrency(totals.totalRevenue || 0)}</h2>
+            <small>${totals.revenueAccountCount} revenue streams</small>
+          </div>
+          <div style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;padding:25px;border-radius:15px;text-align:center;box-shadow:0 4px 15px rgba(245,158,11,0.3);">
+            <h4 style="margin:0 0 10px 0;opacity:0.9;">Gross Profit</h4>
+            <h2 style="margin:0 0 8px 0;">${formatCurrency(totals.grossProfit || 0)}</h2>
+            <small>${totals.totalRevenue > 0 ? ((totals.grossProfit / totals.totalRevenue) * 100).toFixed(1) : '0.0'}% margin</small>
+          </div>
+          <div style="background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;padding:25px;border-radius:15px;text-align:center;box-shadow:0 4px 15px rgba(59,130,246,0.3);">
+            <h4 style="margin:0 0 10px 0;opacity:0.9;">Total Expenses</h4>
+            <h2 style="margin:0 0 8px 0;">${formatCurrency(totals.totalExpenses || 0)}</h2>
+            <small>${totals.expenseAccountCount} expense categories</small>
+          </div>
+          <div style="background:linear-gradient(135deg,${profitabilityStatus.color},${profitabilityStatus.color}dd);color:white;padding:25px;border-radius:15px;text-align:center;box-shadow:0 4px 15px ${profitabilityStatus.color}50;">
+            <h4 style="margin:0 0 10px 0;opacity:0.9;">Net Income</h4>
+            <h2 style="margin:0 0 8px 0;">${formatCurrency(totals.netIncome || 0)}</h2>
+            <small>${profitabilityStatus.status}</small>
+          </div>
+        </div>
+        
+        <div style="background:linear-gradient(135deg,#f8fafc,#f1f5f9);padding:30px;border-left:6px solid #4a4fb5;border-radius:0 15px 15px 0;margin:30px 0;">
+          <h3 style="color:#4a4fb5;margin-bottom:20px;">Enhanced Analysis Summary</h3>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
+            <div>
+              <strong style="color:#374151;">Account Categorization</strong><br/>
+              <span style="color:#6b7280;">Revenue: ${totals.revenueAccountCount}</span><br/>
+              <span style="color:#6b7280;">Expenses: ${totals.expenseAccountCount}</span><br/>
+              <span style="color:#6b7280;">Assets: ${totals.assetAccountCount}</span>
+            </div>
+            <div>
+              <strong style="color:#374151;">Balance Sheet Health</strong><br/>
+              <span style="color:#6b7280;">Total Assets: ${formatCurrency(totals.totalAssets || 0)}</span><br/>
+              <span style="color:#6b7280;">Working Capital: ${formatCurrency(totals.workingCapital || 0)}</span>
+            </div>
+            <div>
+              <strong style="color:#374151;">Visual Analytics</strong><br/>
+              <span style="color:#6b7280;">Dashboard Charts: ${totals.chartCount}</span><br/>
+              <span style="color:#6b7280;">Special Reports: ${getSpecialReportCount()}</span>
+            </div>
+          </div>
+        </div>
+        
+        ${totals.chartCount > 0 ? `
+          <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);padding:25px;border-left:6px solid #22c55e;border-radius:0 15px 15px 0;margin:25px 0;">
+            <h3 style="color:#22c55e;margin-bottom:15px;">Dashboard Charts Integrated</h3>
+            ${chartImages.map(chart => `<p style="margin:5px 0;color:#374151;">• ${chart.name} (${chart.category})</p>`).join('')}
+          </div>
+        ` : ''}
+        
+        <div style="background:${profitabilityStatus.color}20;padding:25px;border-left:6px solid ${profitabilityStatus.color};border-radius:0 15px 15px 0;margin:25px 0;">
+          <h3 style="color:${profitabilityStatus.color};margin-bottom:10px;">Financial Health Status</h3>
+          <p style="color:#374151;">${profitabilityStatus.message} - ${getHealthRecommendation()}</p>
+        </div>
+      `;
+    }
+
+    function getSpecialReportCount() {
+      let count = 0;
+      if (financialData.balanceSheet) count++;
+      if (financialData.arAging) count++;
+      if (financialData.apAging) count++;
+      return count;
+    }
+
+    function getHealthRecommendation() {
+      const totals = financialData.totals;
+      if (totals.netIncome >= 0) {
+        if (totals.grossProfit / totals.totalRevenue > 0.5) {
+          return "Excellent margins and profitability. Consider growth opportunities.";
+        }
+        return "Positive performance. Monitor expense efficiency and scaling opportunities.";
+      } else {
+        if (totals.totalRevenue > 0) {
+          return "Revenue present but expenses exceed income. Focus on cost reduction and revenue optimization.";
+        }
+        return "Comprehensive financial review needed. Analyze revenue generation and expense structure.";
+      }
+    }
+
+    function formatCurrency(amount) {
+      const abs = Math.abs(amount);
+      const formatted = abs.toLocaleString('en-US', { 
+        style: 'currency', 
+        currency: 'USD',
+        minimumFractionDigits: 0,
+        maximumFractionDigits: 0 
+      });
+      return amount < 0 ? `(${formatted})` : formatted;
+    }
+
+    // Enhanced PDF Generation
+    function generatePDF(companyName, reportPeriod, fileName) {
+      const doc = new window.jspdf.jsPDF({ unit: 'mm', format: 'a4' });
+      const ariseBlue = [74, 79, 181];
+      const lightBlue = [240, 242, 255];
+      
+      // Helper functions for PDF generation
+      function addHeader(title) {
+        doc.setFillColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+        doc.rect(0, 0, 210, 35, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text(title, 105, 22, { align: 'center' });
+      }
+      
+      function addKPICard(x, y, title, value, color) {
+        const rgb = hexToRgb(color);
+        // Shadow
+        doc.setFillColor(200, 200, 200);
+        doc.roundedRect(x + 2, y + 2, 85, 40, 3, 3, 'F');
+        // Main card
+        doc.setFillColor(255, 255, 255);
+        doc.setDrawColor(rgb.r, rgb.g, rgb.b);
+        doc.setLineWidth(1.5);
+        doc.roundedRect(x, y, 85, 40, 3, 3, 'FD');
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.text(title, x + 6, y + 12);
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.setTextColor(rgb.r, rgb.g, rgb.b);
+        doc.text(String(value), x + 6, y + 28);
+      }
+     
+      function addTable(startX, startY, columns, rows, options = {}) {
+        const opts = {
+          headerColor: '#4a4fb5',
+          rowHeight: 10,
+          fontSize: 8,
+          maxWidth: 170,
+          alignRight: [],
+          ...options
+        };
+        
+        const colWidth = opts.maxWidth / columns.length;
+        let y = startY;
+        
+        // Header
+        const headerRgb = hexToRgb(opts.headerColor);
+        doc.setFillColor(headerRgb.r, headerRgb.g, headerRgb.b);
+        doc.rect(startX, y - 8, opts.maxWidth, 12, 'F');
+        
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        doc.setTextColor(255, 255, 255);
+        
+        columns.forEach((col, i) => {
+          const x = startX + (i * colWidth) + 3;
+          const align = opts.alignRight.includes(i) ? 'right' : 'left';
+          const textX = align === 'right' ? x + colWidth - 6 : x;
+          doc.text(String(col), textX, y, { align });
+        });
+        
+        y += 8;
+        
+        // Rows
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(opts.fontSize);
+        doc.setTextColor(31, 41, 55);
+        
+        const maxRows = Math.min(rows.length, 25);
+        for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
+          const row = rows[rowIdx];
+          
+          if (rowIdx % 2 === 0) {
+            doc.setFillColor(248, 250, 252);
+            doc.rect(startX, y - 6, opts.maxWidth, opts.rowHeight, 'F');
+          }
+          
+          row.forEach((cell, i) => {
+            const x = startX + (i * colWidth) + 3;
+            const align = opts.alignRight.includes(i) ? 'right' : 'left';
+            const textX = align === 'right' ? x + colWidth - 6 : x;
+            const cellText = String(cell || '').slice(0, 30);
+            doc.text(cellText, textX, y, { align });
+          });
+          
+          y += opts.rowHeight;
+          
+          if (y > 250) break;
+        }
+        
+        return y;
+      }
+      
+      function hexToRgb(hex) {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return result ? {
+          r: parseInt(result[1], 16),
+          g: parseInt(result[2], 16),
+          b: parseInt(result[3], 16)
+        } : { r: 74, g: 79, b: 181 };
+      }
+      
+      // PAGE 1: Cover Page
+      doc.setFillColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.rect(0, 0, 210, 30, 'F');
+      
+      // Logo area
+      doc.setFillColor(lightBlue[0], lightBlue[1], lightBlue[2]);
+      doc.rect(60, 50, 90, 50, 'F');
+      doc.setDrawColor(200, 200, 200);
+      doc.rect(60, 50, 90, 50, 'S');
+      
+      if (logoDataURL) {
+        try {
+          doc.addImage(logoDataURL, 'JPEG', 70, 60, 70, 30);
+        } catch (e) {
+          doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(20);
+          doc.text('ARISE TAX', 105, 78, { align: 'center' });
+        }
+      } else {
+        doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(20);
+        doc.text('ARISE TAX', 105, 78, { align: 'center' });
+      }
+      
+      doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(24);
+      doc.text('Enhanced Financial Report', 105, 130, { align: 'center' });
+      
+      doc.setTextColor(60, 60, 60);
+      doc.setFontSize(18);
+      doc.text(companyName, 105, 150, { align: 'center' });
+      doc.setFontSize(14);
+      doc.text(reportPeriod, 105, 165, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 100, 100);
+      doc.text('Prepared by: ' + document.getElementById('preparedBy').value, 105, 220, { align: 'center' });
+      doc.text('Date: ' + new Date().toLocaleDateString(), 105, 230, { align: 'center' });
+      
+      doc.setFillColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.rect(0, 270, 210, 27, 'F');
+      
+      // PAGE 2: Executive Summary
+      doc.addPage();
+      addHeader('Executive Summary');
+      
+      const totals = financialData.totals;
+      let y = 55;
+      
+      // KPI Cards
+      addKPICard(15, y, 'Total Revenue', formatCurrency(totals.totalRevenue || 0), '#22c55e');
+      addKPICard(110, y, 'Gross Profit', formatCurrency(totals.grossProfit || 0), '#3b82f6');
+      
+      y += 50;
+      addKPICard(15, y, 'Total Expenses', formatCurrency(totals.totalExpenses || 0), '#f59e0b');
+      addKPICard(110, y, 'Net Income', formatCurrency(totals.netIncome || 0), totals.netIncome >= 0 ? '#22c55e' : '#ef4444');
+      
+      y += 60;
+      
+      // Summary stats
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.text('Financial Overview', 20, y);
+      y += 15;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(55, 65, 81);
+      
+      const summaryItems = [
+        `Revenue Accounts: ${totals.revenueAccountCount}`,
+        `Expense Accounts: ${totals.expenseAccountCount}`,
+        `Total Assets: ${formatCurrency(totals.totalAssets || 0)}`,
+        `Working Capital: ${formatCurrency(totals.workingCapital || 0)}`,
+        `Gross Margin: ${totals.totalRevenue > 0 ? ((totals.grossProfit / totals.totalRevenue) * 100).toFixed(1) : '0.0'}%`
+      ];
+      
+      summaryItems.forEach(item => {
+        doc.text(`• ${item}`, 25, y);
+        y += 8;
+      });
+      
+      y += 15;
+      
+      // Health indicator
+      const isProfit = totals.netIncome >= 0;
+      doc.setFillColor(isProfit ? 220 : 254, isProfit ? 252 : 226, isProfit ? 231 : 226);
+      doc.rect(20, y - 10, 170, 25, 'F');
+      doc.setDrawColor(isProfit ? 34 : 239, isProfit ? 197 : 68, isProfit ? 94 : 68);
+      doc.rect(20, y - 10, 170, 25, 'S');
+      
+      doc.setTextColor(isProfit ? 34 : 239, isProfit ? 197 : 68, isProfit ? 94 : 68);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.text(isProfit ? 'Profitable Operations' : 'Operating at a Loss', 25, y);
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+      doc.setTextColor(55, 65, 81);
+      const healthMsg = isProfit ? 'Strong financial performance with positive net income' : 'Immediate attention required - review expense structure and revenue optimization';
+      doc.text(healthMsg, 25, y + 8);
+      
+      // PAGE 3: Revenue Analysis
+      if (Object.keys(financialData.revenue).length > 0) {
+        doc.addPage();
+        addHeader('Revenue Analysis');
+        
+        const revenueEntries = Object.entries(financialData.revenue).sort((a, b) => b[1] - a[1]);
+        const revenueTotal = totals.totalRevenue || 0;
+        
+        const revenueRows = revenueEntries.slice(0, 20).map(([name, amount]) => {
+          const percentage = revenueTotal > 0 ? (amount / revenueTotal * 100) : 0;
+          return [
+            name.slice(0, 40),
+            formatCurrency(amount),
+            percentage.toFixed(1) + '%'
+          ];
+        });
+        
+        addTable(20, 60, ['Revenue Source', 'Amount', '% Share'], revenueRows, {
+          alignRight: [1, 2],
+          headerColor: '#22c55e'
+        });
+      }
+      
+      // PAGE 4: Expense Analysis  
+      if (totals.expenseAccountCount > 0) {
+        doc.addPage();
+        addHeader('Expense Analysis');
+        
+        const allExpenses = {
+          ...financialData.operatingExpenses,
+          ...financialData.costOfGoodsSold,
+          ...financialData.otherExpenses
+        };
+        
+        const expenseEntries = Object.entries(allExpenses).sort((a, b) => b[1] - a[1]);
+        const expenseTotal = totals.totalExpenses || 0;
+        
+        const expenseRows = expenseEntries.slice(0, 20).map(([name, amount]) => {
+          const percentage = expenseTotal > 0 ? (amount / expenseTotal * 100) : 0;
+          return [
+            name.slice(0, 40),
+            formatCurrency(amount),
+            percentage.toFixed(1) + '%'
+          ];
+        });
+        
+        addTable(20, 60, ['Expense Category', 'Amount', '% Share'], expenseRows, {
+          alignRight: [1, 2],
+          headerColor: '#3b82f6'
+        });
+      }
+      
+      // PAGE 5: Balance Sheet Analysis
+      if (totals.totalAssets > 0) {
+        doc.addPage();
+        addHeader('Balance Sheet Analysis');
+        
+        let y = 50;
+        
+        // Assets section
+        if (Object.keys(financialData.currentAssets).length > 0 || Object.keys(financialData.fixedAssets).length > 0) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+          doc.text('ASSETS', 20, y);
+          y += 10;
+          
+          // Current Assets
+          if (Object.keys(financialData.currentAssets).length > 0) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.text('Current Assets', 25, y);
+            y += 8;
+            
+            Object.entries(financialData.currentAssets).slice(0, 10).forEach(([name, amount]) => {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(9);
+              doc.setTextColor(55, 65, 81);
+              doc.text(name.slice(0, 45), 30, y);
+              doc.text(formatCurrency(amount), 180, y, { align: 'right' });
+              y += 7;
+            });
+            y += 5;
+          }
+          
+          // Fixed Assets  
+          if (Object.keys(financialData.fixedAssets).length > 0) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+            doc.text('Fixed Assets', 25, y);
+            y += 8;
+            
+            Object.entries(financialData.fixedAssets).slice(0, 10).forEach(([name, amount]) => {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(9);
+              doc.setTextColor(55, 65, 81);
+              doc.text(name.slice(0, 45), 30, y);
+              doc.text(formatCurrency(amount), 180, y, { align: 'right' });
+              y += 7;
+            });
+            y += 10;
+          }
+          
+          // Total Assets
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+          doc.text('Total Assets', 25, y);
+          doc.text(formatCurrency(totals.totalAssets), 180, y, { align: 'right' });
+          y += 15;
+        }
+        
+        // Liabilities section
+        if (Object.keys(financialData.currentLiabilities).length > 0 || Object.keys(financialData.longTermLiabilities).length > 0) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(12);
+          doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+          doc.text('LIABILITIES', 20, y);
+          y += 10;
+          
+          // Current Liabilities
+          if (Object.keys(financialData.currentLiabilities).length > 0) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(10);
+            doc.text('Current Liabilities', 25, y);
+            y += 8;
+            
+            Object.entries(financialData.currentLiabilities).slice(0, 8).forEach(([name, amount]) => {
+              doc.setFont('helvetica', 'normal');
+              doc.setFontSize(9);
+              doc.setTextColor(55, 65, 81);
+              doc.text(name.slice(0, 45), 30, y);
+              doc.text(formatCurrency(amount), 180, y, { align: 'right' });
+              y += 7;
+            });
+          }
+        }
+      }
+      
+      // Add special reports if available
+      if (financialData.arAging) {
+        doc.addPage();
+        addHeader('Accounts Receivable Aging');
+        addTable(20, 60, financialData.arAging.columns, financialData.arAging.rows, {
+          headerColor: '#f59e0b',
+          alignRight: [1, 2, 3, 4, 5]
+        });
+      }
+      
+      if (financialData.apAging) {
+        doc.addPage();
+        addHeader('Accounts Payable Aging');
+        addTable(20, 60, financialData.apAging.columns, financialData.apAging.rows, {
+          headerColor: '#ef4444',
+          alignRight: [1, 2, 3, 4, 5]
+        });
+      }
+      
+      // PAGE: Recommendations
+      doc.addPage();
+      addHeader('Recommendations & Action Items');
+      
+      y = 50;
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(14);
+      doc.setTextColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.text('Key Findings & Recommendations', 20, y);
+      y += 15;
+      
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      doc.setTextColor(55, 65, 81);
+      
+      const recommendations = getDetailedRecommendations();
+      recommendations.forEach(rec => {
+        doc.text(`• ${rec}`, 25, y);
+        y += 8;
+        if (y > 250) {
+          doc.addPage();
+          y = 50;
+        }
+      });
+      
+      // Footer on last page
+      doc.setFillColor(ariseBlue[0], ariseBlue[1], ariseBlue[2]);
+      doc.rect(0, 270, 210, 27, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(10);
+      doc.text('Confidential - Prepared by ' + document.getElementById('preparedBy').value, 105, 285, { align: 'center' });
+      
+      // Save the PDF
+      doc.save(`${fileName}.pdf`);
+    }
+    
+     // ===== RECOMMENDATIONS PAGE =====
+
+      function getDetailedRecommendations() {
+    
+  	// First check if user provided custom recommendations
+     
+	 const customRecs = document.getElementById('customRecommendations').value.trim();
+      if (customRecs) {
+        return customRecs.split('\n').filter(line => line.trim()).map(line => line.trim());
+      }
+      
+      // Fallback to generated recommendations if no custom input
+      const totals = financialData.totals;
+      const recommendations = [];
+      
+      if (totals.netIncome < 0) {
+        recommendations.push('Immediate action required: Company is operating at a loss');
+        recommendations.push('Conduct detailed expense review to identify cost reduction opportunities');
+        recommendations.push('Analyze revenue streams for growth and optimization potential');
+      } else {
+        recommendations.push('Company shows positive profitability - consider growth strategies');
+      }
+      
+      if (totals.grossProfit / totals.totalRevenue < 0.3) {
+        recommendations.push('Gross margin below 30% - review pricing strategy and cost of goods sold');
+      }
+      
+      if (totals.workingCapital < 0) {
+        recommendations.push('Negative working capital indicates potential cash flow concerns');
+      }
+      
+      if (totals.revenueAccountCount < 3) {
+        recommendations.push('Limited revenue diversification - consider expanding income sources');
+      }
+      
+      if (totals.expenseAccountCount > 50) {
+        recommendations.push('High number of expense categories - consider consolidation for better tracking');
+      }
+      
+      recommendations.push('Regular monthly financial review recommended');
+      recommendations.push('Consider implementing cash flow forecasting');
+      recommendations.push('Review and update chart of accounts for better categorization');
+      
+      return recommendations;
+    }
+  </script>
+</body>
+</html>
